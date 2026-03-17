@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getServerClient } from "@/lib/supabase";
+import { sendPurchaseConfirmation } from "@/lib/email";
 
 // Disable Next.js body parsing — Stripe needs the raw body for signature verification
 export const runtime = "nodejs";
@@ -89,6 +90,19 @@ export async function POST(request) {
           // Table may not exist yet — that's ok, log and continue
           console.warn("[webhook/stripe] Purchases insert failed (table may not exist):", insertErr.message);
         }
+      }
+
+      // Send purchase confirmation email
+      const customerEmail = session.customer_details?.email;
+      const customerName = session.customer_details?.name || "";
+      const propertyAddress = session.metadata?.propertyAddress || "";
+      if (customerEmail) {
+        await sendPurchaseConfirmation({
+          to: customerEmail,
+          name: customerName,
+          propertyAddress,
+          sessionId: session.id,
+        });
       }
 
       break;

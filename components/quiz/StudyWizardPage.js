@@ -204,9 +204,21 @@ export default function StudyWizardPage() {
 
         setStudyResult(studyPayload);
 
-        // STUB: In production, this would redirect to Stripe checkout
-        // then to a study viewer page after payment confirmation
-        // router.push(`/app/studies/${study.meta.studyId}`);
+        // Send study-complete email (fire-and-forget — don't block UI)
+        const totalComponents =
+          (study.allocation.fiveYear?.components?.length || 0) +
+          (study.allocation.sevenYear?.components?.length || 0) +
+          (study.allocation.fifteenYear?.components?.length || 0);
+        fetch("/api/email/study-complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            propertyAddress: study.property?.propertyAddress || tier1Data.address || "",
+            firstYearDeduction: study.depreciation?.totalFirstYearDeduction || 0,
+            taxSavings: Math.round((study.depreciation?.totalFirstYearDeduction || 0) * 0.32),
+            totalComponents,
+          }),
+        }).catch(() => {}); // never surface email errors to user
       } catch (err) {
         console.error("Study generation failed:", err);
         alert("Something went wrong generating your study. Please try again.");
