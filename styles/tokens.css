@@ -1,0 +1,89 @@
+/* ═══════════════════════════════════════════════════════
+   ABODE DESIGN TOKENS — Single Source of Truth
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Typography ─── */
+  --font-primary: 'DM Sans', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+
+  /* ─── Backgrounds ─── */
+  --bg:              #faf9f5;
+  --surface:         #F4F0EA;
+  --surface-raised:  #FFFFFF;
+  --surface-2:       #EDE8DF;
+
+  /* ─── Text ─── */
+  --ink:             #1C1916;
+  --ink-mid:         #3A342C;
+  --dust:            #8C8478;
+
+  /* ─── Borders ─── */
+  --border:          rgba(28, 25, 22, 0.10);
+  --border-strong:   rgba(28, 25, 22, 0.18);
+
+  /* ─── Turquoise — Primary Action ─── */
+  --turq:            #1A8C8C;
+  --turq-mid:        #147878;
+  --turq-light:      #C0DEDE;
+  --turq-bg:         #EAF4F4;
+
+  /* ─── Adobe Terracotta — Accent ─── */
+  --adobe:           #B85030;
+  --adobe-light:     #EED4C8;
+  --adobe-dark:      #7C3018;
+
+  /* ─── Spacing (8px base) ─── */
+  --space-1:   8px;
+  --space-2:   16px;
+  --space-3:   24px;
+  --space-4:   32px;
+  --space-5:   40px;
+  --space-6:   48px;
+  --space-8:   64px;
+  --space-10:  80px;
+  --space-12:  96px;
+  --space-16:  128px;
+
+  /* ─── Border Radius ─── */
+  --radius-sm:   8px;
+  --radius-md:   14px;
+  --radius-lg:   20px;
+  --radius-pill: 100px;
+
+  /* ─── Shadows ─── */
+  --shadow-sm:  0 1px 4px rgba(28, 25, 22, 0.09), 0 1px 2px rgba(28, 25, 22, 0.06);
+  --shadow-md:  0 4px 20px rgba(28, 25, 22, 0.11), 0 2px 8px rgba(28, 25, 22, 0.07);
+  --shadow-lg:  0 16px 48px rgba(28, 25, 22, 0.14), 0 6px 16px rgba(28, 25, 22, 0.08);
+  --shadow-nav: 0 2px 20px rgba(28, 25, 22, 0.10), 0 1px 4px rgba(28, 25, 22, 0.06);
+
+  /* ─── Transitions ─── */
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.45, 0, 0.55, 1);
+  --dur-fast:   150ms;
+  --dur-mid:    250ms;
+  --dur-slow:   400ms;
+
+  /* ─── Enhanced Surfaces ─── */
+  --warm-white:      #FAF8F5;
+  --warm-deep:       #D9D0C3;
+  --surface-dark:    #2C2620;
+  --surface-dark-2:  #1F1B17;
+
+  /* ─── Gradients ─── */
+  --grad-hero:       linear-gradient(160deg, #EDE8DF 0%, #E8E2D8 40%, #E4EDE9 100%);
+  --grad-turq:       linear-gradient(135deg, #1A8C8C 0%, #1FA89A 50%, #1A8C8C 100%);
+  --grad-dark:       linear-gradient(180deg, #2C2620 0%, #1F1B17 100%);
+  --grad-cta:        linear-gradient(135deg, #147878 0%, #1A8C8C 30%, #1FA89A 70%, #147878 100%);
+
+  /* ─── Glow Shadows ─── */
+  --shadow-turq:     0 4px 24px rgba(26, 140, 140, 0.15);
+  --shadow-glow:     0 0 40px rgba(26, 140, 140, 0.08);
+
+  /* ─── Breakpoints (reference — used in media queries) ─── */
+  --bp-sm:  640px;
+  --bp-md:  768px;
+  --bp-lg:  1024px;
+  --bp-xl:  1280px;
+  --bp-2xl: 1536px;
+}

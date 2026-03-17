@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════
+   ABODE BUTTONS
+   ═══════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font-family: var(--font-primary);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  border-radius: var(--radius-pill);
+  padding: 14px 28px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Primary — Turquoise */
+.btn-primary {
+  background: var(--turq);
+  color: #fff;
+  border-color: var(--turq);
+  box-shadow: 0 2px 8px rgba(26, 140, 140, 0.25);
+}
+
+.btn-primary:hover {
+  background: var(--turq-mid);
+  border-color: var(--turq-mid);
+  filter: brightness(1.08);
+}
+
+/* Ink — Dark */
+.btn-ink {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+.btn-ink:hover {
+  filter: brightness(1.3);
+}
+
+/* Outline */
+.btn-outline {
+  background: transparent;
+  color: var(--ink-mid);
+  border-color: var(--border-strong);
+}
+
+.btn-outline:hover {
+  border-color: var(--turq);
+  color: var(--turq);
+  background: var(--turq-bg);
+}
+
+/* Ghost — turquoise outline */
+.btn-ghost {
+  background: transparent;
+  color: var(--turq);
+  border: 1.5px solid var(--turq);
+}
+
+.btn-ghost:hover {
+  color: #fff;
+  background: var(--turq);
+}
+
+/* Subtle — borderless for app-level actions */
+.btn-subtle {
+  background: transparent;
+  color: var(--ink-mid);
+  border-color: transparent;
+}
+
+.btn-subtle:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+/* Adobe — Accent */
+.btn-adobe {
+  background: var(--adobe);
+  color: #fff;
+  border-color: var(--adobe);
+}
+
+.btn-adobe:hover {
+  background: var(--adobe-dark);
+  border-color: var(--adobe-dark);
+  filter: brightness(1.08);
+}
+
+/* Size variants */
+.btn-sm {
+  padding: 8px 20px;
+  font-size: 13px;
+}
+
+.btn-lg {
+  padding: 16px 36px;
+  font-size: 16px;
+}
+
+/* Icon button */
+.btn-icon {
+  padding: 10px;
+  border-radius: var(--radius-pill);
+}

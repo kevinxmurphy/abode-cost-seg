@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abode Cost Segregation — Design System v1.2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,200;9..40,300;9..40,400;9..40,500;9..40,700&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* ── Backgrounds ── */
+      --bg:              #faf9f5;   /* ivory white — primary page bg */
+      --surface:         #F2EDE4;   /* warm off-white — section alt */
+      --surface-2:       #EAE3D6;   /* oat — offset content blocks */
+      --surface-raised:  #FFFFFF;   /* pure white — cards, modals */
+
+      /* ── Ink ── */
+      --ink:             #1C1916;
+      --ink-mid:         #3A342C;
+      --dust:            #7A7268;
+      --border:          rgba(28,25,22,0.10);
+      --border-strong:   rgba(28,25,22,0.18);
+
+      /* ── Turquoise — ACTION ONLY ── */
+      /* Used exclusively for: CTA buttons, links, interactive selections, progress bars */
+      --turq:            #1A8C8C;
+      --turq-mid:        #147878;
+      --turq-light:      #C0DEDE;
+      --turq-bg:         #E4F2F2;
+
+      /* ── Adobe — BRAND WARMTH / DECORATION ── */
+      /* Used for: all eyebrows, card border accents, trust signals, decorative icons, savings pills */
+      --adobe:           #B85030;
+      --adobe-light:     #EED4C8;
+      --adobe-dark:      #7C3018;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      padding: 40px;
+      color: var(--ink);
+    }
+
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 56px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    .doc-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+
+    .doc-meta {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--dust);
+      text-transform: uppercase;
+      text-align: right;
+      line-height: 1.8;
+    }
+
+    .sec { margin-bottom: 56px; }
+
+    .sec-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dust);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    /* ── WORDMARK ── */
+    .wm-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .wm {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 24px;
+      border-radius: 100px;
+    }
+
+    .wm-light { background: var(--surface-raised); border: 1px solid var(--border); }
+    .wm-dark  { background: var(--ink); }
+    .wm-turq  { background: var(--turq); }
+    .wm-glyph { width: 28px; height: 28px; flex-shrink: 0; }
+
+    .wm-name {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .wm-light .wm-name { color: var(--ink); }
+    .wm-dark  .wm-name { color: var(--surface); }
+    .wm-turq  .wm-name { color: white; }
+    .wm-dot { color: var(--turq); }
+    .wm-dark .wm-dot  { color: var(--turq-light); }
+    .wm-turq .wm-dot  { color: rgba(255,255,255,0.55); }
+
+    /* ── NAV ── */
+    .nav {
+      display: flex;
+      align-items: center;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 10px 10px 10px 20px;
+      width: fit-content;
+    }
+
+    .nav-logo {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-right: 28px;
+    }
+
+    .nav-logo .dot { color: var(--turq); }
+    .nav-links { display: flex; gap: 24px; margin-right: 20px; }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--dust);
+      letter-spacing: 0.02em;
+    }
+
+    .nav-cta {
+      padding: 9px 20px;
+      background: var(--ink);
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--surface);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ── PALETTE ── */
+    .pal { display: flex; gap: 10px; flex-wrap: wrap; }
+    .sw { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+    .sw-dot {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+    }
+
+    .sw-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 8px;
+      color: var(--dust);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── TYPE SCALE ── */
+    .type-demo {
+      background: var(--surface-raised);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 40px;
+    }
+
+    .t-eyebrow {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--adobe);
+      margin-bottom: 16px;
+      font-weight: 400;
+    }
+
+    .t-h1 {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 52px;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .t-h1 span { color: var(--turq); }
+
+    .t-finally {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 200;
+      font-size: 52px;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: var(--turq);
+      margin-bottom: 28px;
+      font-style: italic;
+    }
+
+    .t-h2 {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 28px;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .t-body {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      max-width: 480px;
+      margin-bottom: 14px;
+    }
+
+    .t-mono {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 400;
+      font-size: 12px;
+      color: var(--dust);
+      letter-spacing: 0.08em;
+    }
+
+    /* ── BUTTONS — ALL CAPS ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: filter 150ms ease, transform 100ms ease;
+    }
+
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary  { background: var(--turq); color: white; }
+    .btn-ink      { background: var(--ink); color: var(--surface); }
+    .btn-outline  { background: transparent; border: 1.5px solid var(--border-strong); color: var(--ink-mid); }
+    .btn-adobe    { background: var(--adobe); color: white; }
+    .btn-ghost    { background: transparent; border: 1.5px solid var(--turq); color: var(--turq); }
+
+    /* ── GRID ── */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* ── QUIZ CARD ── */
+    .quiz-card {
+      background: var(--surface-raised);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 32px;
+    }
+
+    .prog {
+      height: 2px;
+      background: var(--surface-2);
+      border-radius: 99px;
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      width: 40%;
+      height: 100%;
+      background: var(--turq);
+      border-radius: 99px;
+    }
+
+    /* Quiz step label — now matches option row style */
+    .q-step {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: var(--dust);
+      margin-bottom: 12px;
+    }
+
+    .q-hed {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--ink);
+      margin-bottom: 22px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+
+    .q-opts { display: flex; flex-direction: column; gap: 8px; }
+
+    .q-opt {
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      color: var(--ink-mid);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+      transition: all 150ms ease;
+    }
+
+    .q-opt:hover {
+      border-color: var(--turq);
+      background: var(--turq-bg);
+      color: var(--turq-mid);
+    }
+
+    .q-opt.on {
+      background: var(--turq-bg);
+      border-color: var(--turq);
+      color: var(--turq-mid);
+      font-weight: 500;
+    }
+
+    .q-hint {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--dust);
+      font-style: italic;
+    }
+
+    /* ── RESULTS CARD ── */
+    .results-card {
+      background: var(--ink);
+      border-radius: 20px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Roboto Mono on dark — bumped size + full opacity */
+    .r-eye {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(244,240,234,0.55);
+      margin-bottom: 20px;
+      font-weight: 400;
+    }
+
+    .r-label {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(244,240,234,0.55);
+      margin-bottom: 6px;
+    }
+
+    .r-num {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 0.95;
+      color: var(--surface-raised);
+      margin-bottom: 4px;
+      letter-spacing: -0.02em;
+    }
+
+    /* Range text — bumped opacity + size for legibility */
+    .r-range {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(244,240,234,0.5);
+      margin-bottom: 24px;
+      letter-spacing: 0.01em;
+    }
+
+    .r-tiers {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .r-tier {
+      background: rgba(244,240,234,0.07);
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(244,240,234,0.1);
+    }
+
+    /* Tier labels — DM Sans instead of tiny Roboto Mono */
+    .r-tier-n {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(244,240,234,0.45);
+      margin-bottom: 6px;
+    }
+
+    .r-tier-v {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 17px;
+      color: var(--surface-raised);
+      letter-spacing: -0.01em;
+    }
+
+    .r-tier.mid .r-tier-v { color: var(--turq-light); }
+
+    .r-btn-main {
+      width: 100%;
+      padding: 15px 20px;
+      background: var(--turq);
+      border: none;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      transition: filter 150ms ease;
+    }
+
+    .r-btn-main:hover { filter: brightness(1.1); }
+
+    .r-btn-ghost {
+      width: 100%;
+      padding: 13px 20px;
+      background: transparent;
+      border: 1px solid rgba(244,240,234,0.22);
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      font-size: 13px;
+      color: rgba(244,240,234,0.55);
+      cursor: pointer;
+      text-align: center;
+      letter-spacing: 0.04em;
+      transition: border-color 150ms ease;
+    }
+
+    .r-btn-ghost:hover { border-color: rgba(244,240,234,0.4); color: rgba(244,240,234,0.75); }
+
+    /* ── TRUST ── */
+    .trust {
+      background: var(--adobe-light);
+      border: 1px solid rgba(184,80,48,0.15);
+      border-radius: 100px;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: fit-content;
+    }
+
+    .trust-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--adobe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .trust-txt {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--adobe-dark);
+      line-height: 1;
+    }
+
+    /* ── STATS ── */
+    .stat {
+      background: var(--surface-raised);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+      transition: transform 250ms ease, box-shadow 250ms ease;
+    }
+
+    .stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(28,25,22,0.09);
+    }
+
+    .stat-val {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 42px;
+      line-height: 1;
+      color: var(--turq);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      font-size: 13px;
+      color: var(--dust);
+      line-height: 1.5;
+    }
+
+    /* ── TOKEN TABLE ── */
+    .token-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .token-table th {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dust);
+      font-weight: 400;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    .token-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-mid);
+      vertical-align: middle;
+    }
+
+    .token-table tr:last-child td { border-bottom: none; }
+
+    .color-chip {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    .token-table tbody tr:hover td { background: var(--surface-2); }
+  </style>
+</head>
+<body>
+
+  <div class="doc-header">
+    <div class="doc-title">Abode Cost Segregation — Design System v1.2</div>
+    <div class="doc-meta">
+      Status: Directionally locked<br>
+      March 2026 · Frontend Build Reference<br>
+      v1.2 — bg #faf9f5 ivory, adobe=decoration, turq=action only
+    </div>
+  </div>
+
+  <!-- 01 BRAND -->
+  <div class="sec">
+    <div class="sec-label">01 — Brand / Wordmark</div>
+    <div class="wm-row">
+      <div class="wm wm-light">
+        <svg class="wm-glyph" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="#1C1916" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="#1C1916" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="#1A8C8C" stroke-width="1.1" fill="rgba(26,140,140,0.08)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="#1A8C8C" stroke-width="1.1"/>
+        </svg>
+        <div class="wm-name">Abode<span class="wm-dot"> .</span></div>
+      </div>
+      <div class="wm wm-dark">
+        <svg class="wm-glyph" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="rgba(244,240,234,0.5)" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="rgba(244,240,234,0.5)" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="#C0DEDE" stroke-width="1.1" fill="rgba(192,222,222,0.12)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="#C0DEDE" stroke-width="1.1"/>
+        </svg>
+        <div class="wm-name">Abode<span class="wm-dot"> .</span></div>
+      </div>
+      <div class="wm wm-turq">
+        <svg class="wm-glyph" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="rgba(255,255,255,0.6)" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="rgba(255,255,255,0.6)" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="rgba(255,255,255,0.9)" stroke-width="1.1" fill="rgba(255,255,255,0.15)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="rgba(255,255,255,0.9)" stroke-width="1.1"/>
+        </svg>
+        <div class="wm-name">Abode<span class="wm-dot"> .</span></div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="nav-logo">Abode<span class="dot"> .</span></div>
+      <div class="nav-links">
+        <span class="nav-link">How it works</span>
+        <span class="nav-link">Sample study</span>
+        <span class="nav-link">Pricing</span>
+      </div>
+      <button class="nav-cta">Get started</button>
+    </div>
+  </div>
+
+  <!-- 02 PALETTE -->
+  <div class="sec">
+    <div class="sec-label">02 — Color System — turq = action · adobe = brand warmth</div>
+
+    <div style="font-family:'Roboto Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--dust); margin-bottom:14px;">Backgrounds</div>
+    <div class="pal" style="margin-bottom:24px;">
+      <div class="sw"><div class="sw-dot" style="background:#faf9f5; border:1px solid #d4cfc8;"></div><div class="sw-name">Ivory white<br>--bg</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#FFFFFF; border:1px solid #d4cfc8;"></div><div class="sw-name">White<br>--surface-raised</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#F2EDE4;"></div><div class="sw-name">Warm sand<br>--surface</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#EAE3D6;"></div><div class="sw-name">Oat<br>--surface-2</div></div>
+    </div>
+
+    <div style="font-family:'Roboto Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--turq); margin-bottom:14px;">Turquoise — action only</div>
+    <div class="pal" style="margin-bottom:24px;">
+      <div class="sw"><div class="sw-dot" style="background:#1A8C8C; border-color:transparent;"></div><div class="sw-name">Turquoise<br>--turq</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#147878; border-color:transparent;"></div><div class="sw-name">Turq mid<br>--turq-mid</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#C0DEDE;"></div><div class="sw-name">Turq light<br>--turq-light</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#E4F2F2;"></div><div class="sw-name">Turq tint<br>--turq-bg</div></div>
+    </div>
+
+    <div style="font-family:'Roboto Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--adobe); margin-bottom:14px;">Adobe — brand warmth &amp; decoration</div>
+    <div class="pal" style="margin-bottom:24px;">
+      <div class="sw"><div class="sw-dot" style="background:#B85030; border-color:transparent;"></div><div class="sw-name">Adobe<br>--adobe</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#EED4C8;"></div><div class="sw-name">Adobe light<br>--adobe-light</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#7C3018; border-color:transparent;"></div><div class="sw-name">Adobe dark<br>--adobe-dark</div></div>
+    </div>
+
+    <div style="font-family:'Roboto Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--dust); margin-bottom:14px;">Ink</div>
+    <div class="pal">
+      <div class="sw"><div class="sw-dot" style="background:#1C1916; border-color:transparent;"></div><div class="sw-name">Ink<br>--ink</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#3A342C; border-color:transparent;"></div><div class="sw-name">Ink mid<br>--ink-mid</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#7A7268;"></div><div class="sw-name">Dust<br>--dust</div></div>
+    </div>
+  </div>
+
+  <!-- 02b COLOR ROLES -->
+  <div class="sec">
+    <div class="sec-label">02b — Color Role Rules — Elevated Southwest</div>
+    <div style="background:var(--surface-raised); border:1px solid var(--border); border-radius:20px; padding:28px; display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+
+      <div>
+        <div style="font-family:'Roboto Mono',monospace; font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:var(--turq); margin-bottom:12px;">Turquoise — when to use</div>
+        <ul style="font-family:'DM Sans',sans-serif; font-size:13px; color:var(--ink-mid); line-height:2; list-style:none; padding:0;">
+          <li>✓ &nbsp;Primary CTA buttons (.btn-primary)</li>
+          <li>✓ &nbsp;Text links and hover states</li>
+          <li>✓ &nbsp;Quiz option selected state</li>
+          <li>✓ &nbsp;Progress bar fill</li>
+          <li>✓ &nbsp;Interactive chevrons / arrows</li>
+          <li style="color:var(--dust);">✗ &nbsp;Eyebrows (use adobe)</li>
+          <li style="color:var(--dust);">✗ &nbsp;Card border accents (use adobe)</li>
+          <li style="color:var(--dust);">✗ &nbsp;Decorative icons (use adobe)</li>
+        </ul>
+      </div>
+
+      <div>
+        <div style="font-family:'Roboto Mono',monospace; font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:var(--adobe); margin-bottom:12px;">Adobe — when to use</div>
+        <ul style="font-family:'DM Sans',sans-serif; font-size:13px; color:var(--ink-mid); line-height:2; list-style:none; padding:0;">
+          <li>✓ &nbsp;All section eyebrows</li>
+          <li>✓ &nbsp;Card top border accents (3px)</li>
+          <li>✓ &nbsp;Trust/guarantee icons &amp; badges</li>
+          <li>✓ &nbsp;Savings pills (testimonials)</li>
+          <li>✓ &nbsp;Section labels (WHAT YOUR CPA WILL ASK)</li>
+          <li>✓ &nbsp;Decorative quote marks</li>
+          <li style="color:var(--dust);">✗ &nbsp;CTA buttons (use turquoise)</li>
+          <li style="color:var(--dust);">✗ &nbsp;Interactive selections (use turquoise)</li>
+        </ul>
+      </div>
+
+    </div>
+    <div style="font-family:'DM Sans',sans-serif; font-size:12px; color:var(--dust); margin-top:12px; font-style:italic;">
+      Design intent: The ivory/sand background does the heavy lifting for the southwest warmth. Adobe accents give it character and humanity. Turquoise is reserved as the single action signal — making CTAs pop because they're rare.
+    </div>
+  </div>
+
+  <!-- 03 TYPE -->
+  <div class="sec">
+    <div class="sec-label">03 — Type Scale — DM Sans + Roboto Mono</div>
+    <div class="type-demo">
+      <div class="t-eyebrow">For STR investors</div>
+      <div class="t-h1">Unlock what<br>you're <span>owed.</span></div>
+      <div class="t-finally">Finally.</div>
+      <div class="t-h2">How it works</div>
+      <div class="t-body">STR investors leave tens of thousands on the table every year. Abode runs your cost segregation study in minutes — and hands you a CPA-ready report the same day. No accountant middleman. No 8-week wait.</div>
+      <div class="t-mono">IRS-compliant · PDF + Excel deliverable · $481 flat · no accountant required</div>
+    </div>
+  </div>
+
+  <!-- 04 BUTTONS -->
+  <div class="sec">
+    <div class="sec-label">04 — Buttons — all caps, pill radius</div>
+    <div class="btn-row">
+      <button class="btn btn-primary">See my savings →</button>
+      <button class="btn btn-ink">Get started</button>
+      <button class="btn btn-ghost">View sample study</button>
+      <button class="btn btn-outline">Learn more</button>
+      <button class="btn btn-adobe">Get started — $481</button>
+    </div>
+  </div>
+
+  <!-- 05 TRUST -->
+  <div class="sec">
+    <div class="sec-label">05 — Trust Strip</div>
+    <div class="trust">
+      <div class="trust-dot">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M6 1L7.5 4.5L11.5 4.9L8.7 7.5L9.5 11.5L6 9.6L2.5 11.5L3.3 7.5L0.5 4.9L4.5 4.5Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="trust-txt">IRS Publication 5653-compliant · CPA-ready PDF + Excel · You own the study</div>
+    </div>
+  </div>
+
+  <!-- 06 STATS -->
+  <div class="sec">
+    <div class="sec-label">06 — Proof / Stat Cards</div>
+    <div class="grid3">
+      <div class="stat">
+        <div class="stat-val">$61,400</div>
+        <div class="stat-label">Avg. first-year deduction for STR investors</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">100%</div>
+        <div class="stat-label">Bonus depreciation reinstated Jan 2025</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">10 min</div>
+        <div class="stat-label">To complete your full Abode study</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 07 COMPONENTS -->
+  <div class="sec">
+    <div class="sec-label">07 — Core Components — Quiz Step + Results Card</div>
+    <div class="grid2">
+
+      <div class="quiz-card">
+        <div class="prog"><div class="prog-fill"></div></div>
+        <div class="q-step">Step 2 of 5 — Property details</div>
+        <div class="q-hed">What year was your property built?</div>
+        <div class="q-opts">
+          <div class="q-opt">Before 1978 <span class="q-hint">more to reclassify</span></div>
+          <div class="q-opt on">1978 – 2000</div>
+          <div class="q-opt">2001 – 2015</div>
+          <div class="q-opt">After 2015 <span class="q-hint">newer builds qualify too</span></div>
+        </div>
+      </div>
+
+      <div class="results-card">
+        <div class="r-eye">Your Abode Estimate</div>
+        <div class="r-label">Likely first-year deduction</div>
+        <div class="r-num">$61,400</div>
+        <div class="r-range">Range $44,200 – $79,600 based on study findings</div>
+        <div class="r-tiers">
+          <div class="r-tier"><div class="r-tier-n">Conservative</div><div class="r-tier-v">$44,200</div></div>
+          <div class="r-tier mid"><div class="r-tier-n">Likely</div><div class="r-tier-v">$61,400</div></div>
+          <div class="r-tier"><div class="r-tier-n">Optimistic</div><div class="r-tier-v">$79,600</div></div>
+        </div>
+        <button class="r-btn-main">Get My Full Study — $481 <span>→</span></button>
+        <button class="r-btn-ghost">Email me this estimate first</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 07b TESTIMONIAL CARD -->
+  <div class="sec">
+    <div class="sec-label">07b — Testimonial Card — adobe accent treatment</div>
+    <div style="max-width:360px;">
+      <div style="background:var(--surface-raised); border:1px solid var(--border); border-top:3px solid var(--adobe); border-radius:20px; padding:24px; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 6px rgba(28,25,22,0.06);">
+        <div style="font-family:Georgia,serif; font-size:40px; font-weight:700; color:var(--adobe-light); line-height:0.8;">&ldquo;</div>
+        <p style="font-family:'DM Sans',sans-serif; font-size:14px; line-height:1.7; color:var(--ink-mid);">I had no idea cost segregation was even an option for my Airbnb. My CPA had everything she needed.</p>
+        <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(184,80,48,0.08); border:1px solid var(--adobe-light); border-radius:100px; padding:4px 12px; font-size:12px; color:var(--adobe-dark); font-weight:600; font-family:'DM Sans',sans-serif; width:fit-content;">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3.5 7L6 9.5L10.5 4.5" stroke="#B85030" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Identified $44,200 in deductions
+        </span>
+        <div style="border-top:1px solid var(--border);"></div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+          <div>
+            <div style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:14px; color:var(--ink);">Beta Tester</div>
+            <div style="font-family:'Roboto Mono',monospace; font-size:10px; color:var(--dust); letter-spacing:0.04em;">Nashville, TN</div>
+          </div>
+          <div style="font-family:'Roboto Mono',monospace; font-size:10px; color:var(--dust); letter-spacing:0.04em; text-align:right;">3-bed STR, 2023</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 TOKEN REFERENCE -->
+  <div class="sec">
+    <div class="sec-label">08 — Token Quick Reference</div>
+    <table class="token-table">
+      <thead>
+        <tr><th>Token</th><th>Value</th><th>Usage</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>--font-primary</td><td>'DM Sans', sans-serif</td><td>All UI text — weights 200/300/400/500/700</td></tr>
+        <tr><td>--font-mono</td><td>'Roboto Mono', monospace</td><td>Eyebrows, metadata — min 11px, min opacity 0.45 on dark</td></tr>
+        <tr><td>--radius-pill</td><td>100px</td><td>Buttons, nav, quiz options, trust strip</td></tr>
+        <tr><td>--radius-lg</td><td>20px</td><td>Cards, modals, stat blocks</td></tr>
+        <tr><td>--radius-md</td><td>14px</td><td>Inner tier cards, tags</td></tr>
+        <tr><td>--bg</td><td><span class="color-chip" style="background:#faf9f5;"></span>#faf9f5</td><td>Page background — ivory white</td></tr>
+        <tr><td>--surface-raised</td><td><span class="color-chip" style="background:#FFFFFF; border:1px solid #ccc;"></span>#FFFFFF</td><td>Cards, modals — pure white for elevation contrast</td></tr>
+        <tr><td>--turq</td><td><span class="color-chip" style="background:#1A8C8C; border-color:#1A8C8C;"></span>#1A8C8C</td><td>ACTION ONLY — CTA buttons, links, interactive selections, progress</td></tr>
+        <tr><td>--adobe</td><td><span class="color-chip" style="background:#B85030; border-color:#B85030;"></span>#B85030</td><td>BRAND WARMTH — all eyebrows, card top borders, decorative accents, trust icons</td></tr>
+        <tr><td>--adobe-dark</td><td><span class="color-chip" style="background:#7C3018; border-color:#7C3018;"></span>#7C3018</td><td>Adobe text on light backgrounds — savings pill text</td></tr>
+        <tr><td>--ink</td><td><span class="color-chip" style="background:#1C1916; border-color:#1C1916;"></span>#1C1916</td><td>Primary text, results card bg, dark wordmark</td></tr>
+        <tr><td>Buttons</td><td>ALL CAPS</td><td>font-weight 700, letter-spacing 0.1em, text-transform uppercase</td></tr>
+        <tr><td>Dark surface text</td><td>opacity min 0.45</td><td>Never below rgba(244,240,234,0.45) on --ink backgrounds</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

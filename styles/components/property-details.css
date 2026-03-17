@@ -1,0 +1,1158 @@
+/* ═══════════════════════════════════════════════════════
+   PROPERTY DETAIL CARDS — Tier 2 Walkthrough
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Wrapper ─── */
+.pdc-wrapper {
+  margin-bottom: var(--space-4);
+}
+
+/* ─── Progress ─── */
+.pdc-progress {
+  margin-bottom: var(--space-3);
+}
+
+.pdc-progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.pdc-progress-fill {
+  height: 100%;
+  background: var(--turq);
+  border-radius: 2px;
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pdc-progress-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dust);
+  letter-spacing: 0.04em;
+}
+
+/* ─── Card List ─── */
+.pdc-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ─── Individual Card ─── */
+.pdc-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.pdc-card.expanded {
+  border-color: var(--turq-light);
+  box-shadow: 0 4px 20px rgba(26, 140, 140, 0.08);
+}
+
+.pdc-card.confirmed {
+  border-color: var(--turq-light);
+}
+
+.pdc-card.confirmed .pdc-card-header {
+  background: var(--turq-bg);
+}
+
+/* ─── Card Header ─── */
+.pdc-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-primary);
+  transition: background 150ms;
+}
+
+.pdc-card-header:hover {
+  background: var(--surface-2);
+}
+
+.pdc-card-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.pdc-card-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.pdc-card-name {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.pdc-card-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--dust);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdc-card-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--turq);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pdc-card-contribution {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--turq-mid);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pdc-card-chevron {
+  color: var(--dust);
+  flex-shrink: 0;
+}
+
+/* ─── Card Body ─── */
+.pdc-card-body {
+  padding: 0 16px 16px;
+  animation: pdcSlideIn 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pdcSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pdc-card-depreciation-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--turq-mid);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  padding: 8px 12px;
+  background: var(--turq-bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+}
+
+/* ─── Items ─── */
+.pdc-item {
+  margin-bottom: var(--space-3);
+}
+
+.pdc-item:last-of-type {
+  margin-bottom: var(--space-2);
+}
+
+.pdc-item-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 8px;
+  font-family: var(--font-primary);
+}
+
+/* ─── Select Options (single-select pill buttons) ─── */
+.pdc-select-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pdc-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: #fff;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: all 150ms;
+  white-space: nowrap;
+}
+
+.pdc-select-btn:hover {
+  border-color: var(--turq-light);
+  color: var(--ink);
+}
+
+.pdc-select-btn.selected {
+  background: var(--turq-bg);
+  border-color: var(--turq);
+  color: var(--turq-mid);
+  font-weight: 500;
+}
+
+.pdc-recommended-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--turq);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  margin-left: 4px;
+}
+
+/* ─── Multi Options (checkbox-style) ─── */
+.pdc-multi-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pdc-multi-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: all 150ms;
+  text-align: left;
+  width: 100%;
+}
+
+.pdc-multi-btn:hover {
+  border-color: var(--turq-light);
+}
+
+.pdc-multi-btn.selected {
+  background: var(--turq-bg);
+  border-color: var(--turq);
+  color: var(--turq-mid);
+}
+
+.pdc-multi-check {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 150ms;
+}
+
+.pdc-multi-btn.selected .pdc-multi-check {
+  background: var(--turq);
+  border-color: var(--turq);
+  color: #fff;
+}
+
+/* ─── Confirm Button ─── */
+.pdc-confirm-btn {
+  margin-top: var(--space-2);
+  width: 100%;
+}
+
+/* ─── Intro Section ─── */
+.pdc-intro {
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.pdc-intro-sub {
+  font-size: 14px;
+  color: var(--dust);
+  line-height: 1.6;
+  margin-top: var(--space-1);
+}
+
+.pdc-property-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--space-2);
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-mid);
+  font-family: var(--font-primary);
+}
+
+.pdc-property-badge-detail {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--dust);
+}
+
+/* ─── Phase Label in Header ─── */
+.pdc-phase-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dust);
+}
+
+/* ─── ROI Callout ─── */
+.pdc-roi-callout {
+  margin-top: var(--space-2);
+  padding: 16px 20px;
+  background: var(--turq-bg);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.pdc-roi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.pdc-roi-row span {
+  color: var(--dust);
+}
+
+.pdc-roi-row strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pdc-roi-result {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--sand-dark);
+  text-align: center;
+  font-weight: 600;
+  color: var(--turq-mid);
+  font-size: 15px;
+}
+
+/* ─── Bottom CTA ─── */
+.pdc-bottom-cta {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.pdc-bottom-hint {
+  font-size: 12px;
+  color: var(--dust);
+  margin-top: var(--space-2);
+}
+
+/* ─── Component Breakdown (Tier 2 Results) ─── */
+.pdc-component-breakdown {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.pdc-schedule-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pdc-schedule-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.pdc-schedule-life {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pdc-schedule-info {
+  min-width: 0;
+}
+
+.pdc-schedule-bar-track {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.pdc-schedule-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pdc-schedule-label {
+  font-size: 11px;
+  color: var(--dust);
+  line-height: 1.3;
+}
+
+.pdc-schedule-amount {
+  text-align: right;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.pdc-schedule-pct {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dust);
+  font-weight: 400;
+}
+
+/* ─── Callouts ─── */
+.pdc-callout {
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.pdc-callout-adobe {
+  background: var(--adobe-light);
+  border: 1px solid rgba(184, 80, 48, 0.15);
+}
+
+.pdc-callout-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--adobe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.pdc-callout-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--adobe-dark);
+  margin-bottom: 4px;
+  font-family: var(--font-primary);
+}
+
+.pdc-callout-body {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.6;
+  font-family: var(--font-primary);
+}
+
+/* ─── Purchase Section ─── */
+.pdc-purchase-section {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.pdc-trust-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: var(--space-3) 0;
+}
+
+.pdc-trust-signal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--dust);
+  font-family: var(--font-primary);
+}
+
+.pdc-trust-signal svg {
+  color: var(--turq);
+  flex-shrink: 0;
+}
+
+/* ─── Profile Enrichment ─── */
+.pdc-profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--space-3);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.pdc-profile-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-primary);
+}
+
+.pdc-profile-label svg {
+  color: var(--turq-mid);
+}
+
+.pdc-profile-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pdc-profile-hint {
+  font-size: 12px;
+  color: var(--dust);
+  font-family: var(--font-primary);
+}
+
+/* ─── Mobile Responsive ─── */
+@media (max-width: 640px) {
+  .pdc-schedule-row {
+    grid-template-columns: 55px 1fr auto;
+    gap: 8px;
+  }
+
+  .pdc-schedule-life {
+    font-size: 11px;
+  }
+
+  .pdc-schedule-label {
+    font-size: 10px;
+  }
+
+  .pdc-select-options {
+    gap: 4px;
+  }
+
+  .pdc-select-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .pdc-trust-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .results-range-hero {
+    gap: 8px;
+  }
+}
+
+/* ─── Airbnb Property Header Card ─── */
+.pdc-airbnb-header {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-2);
+}
+
+.pdc-airbnb-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pdc-airbnb-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pdc-airbnb-header-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdc-airbnb-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pdc-airbnb-header-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pdc-airbnb-header-reviews {
+  font-size: 12px;
+  color: var(--dust);
+}
+
+.pdc-airbnb-superhost-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--turq-bg);
+  color: var(--turq);
+}
+
+.pdc-airbnb-header-specs {
+  font-size: 12px;
+  color: var(--dust);
+}
+
+@media (max-width: 640px) {
+  .pdc-airbnb-header {
+    gap: var(--space-2);
+  }
+
+  .pdc-airbnb-thumb {
+    width: 64px;
+    height: 64px;
+  }
+
+  .pdc-airbnb-header-title {
+    font-size: 13px;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   AIRBNB AMENITY DETECTION — Room Photo Grid
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Wrapper ─── */
+.airbnb-detection {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #fff;
+  overflow: hidden;
+}
+
+/* ─── Collapsible Header ─── */
+.airbnb-detection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  background: var(--turq-bg);
+  cursor: pointer;
+  font-family: var(--font-primary);
+  text-align: left;
+  transition: background 150ms;
+}
+
+.airbnb-detection-header:hover {
+  background: rgba(26, 140, 140, 0.08);
+}
+
+.airbnb-detection-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.airbnb-detection-icon {
+  color: var(--turq);
+  flex-shrink: 0;
+}
+
+.airbnb-detection-title {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.airbnb-detection-meta {
+  display: block;
+  font-size: 12px;
+  color: var(--dust);
+  margin-top: 2px;
+}
+
+.airbnb-detection-toggle {
+  color: var(--dust);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Body ─── */
+.airbnb-detection-body {
+  padding: 16px;
+  animation: pdcSlideIn 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Room Grid ─── */
+.airbnb-room-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+/* ─── Room Card ─── */
+.airbnb-room-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.airbnb-room-card.expanded {
+  border-color: var(--turq-light);
+  box-shadow: 0 2px 12px rgba(26, 140, 140, 0.06);
+}
+
+.airbnb-room-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  text-align: left;
+  transition: background 150ms;
+}
+
+.airbnb-room-card-header:hover {
+  background: var(--surface-2);
+}
+
+/* ─── Room Thumbnail ─── */
+.airbnb-room-img-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+
+.airbnb-room-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.airbnb-room-img-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--dust);
+}
+
+.airbnb-room-img-count {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+
+/* ─── Room Card Info ─── */
+.airbnb-room-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.airbnb-room-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.airbnb-room-amenity-count {
+  display: block;
+  font-size: 11px;
+  color: var(--dust);
+  margin-top: 2px;
+}
+
+.airbnb-room-confirmed-count {
+  color: var(--turq-mid);
+  font-weight: 500;
+}
+
+.airbnb-room-card-chevron {
+  color: var(--dust);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Room Card Body (expanded) ─── */
+.airbnb-room-card-body {
+  padding: 0 12px 12px;
+  animation: pdcSlideIn 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Image Gallery ─── */
+.airbnb-room-gallery {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: var(--space-2);
+  -webkit-overflow-scrolling: touch;
+}
+
+.airbnb-room-gallery-thumb {
+  position: relative;
+  width: 80px;
+  height: 60px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--surface-2);
+}
+
+.airbnb-room-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.airbnb-room-gallery-zoom {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border-radius: 3px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.airbnb-room-gallery-thumb:hover .airbnb-room-gallery-zoom,
+.airbnb-room-full-img-btn:hover .airbnb-room-gallery-zoom {
+  opacity: 1;
+}
+
+/* Single full-width image button */
+.airbnb-room-full-img-btn {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.airbnb-room-full-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Amenity List ─── */
+.airbnb-room-amenities {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.airbnb-room-amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--font-primary);
+}
+
+.airbnb-room-amenity-name {
+  flex: 1;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.airbnb-room-amenity-cat {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dust);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.airbnb-room-no-amenities {
+  font-size: 12px;
+  color: var(--dust);
+  padding: 8px;
+  text-align: center;
+  font-style: italic;
+}
+
+.airbnb-room-costseg-link {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--turq-mid);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ─── Confidence Badges ─── */
+.airbnb-confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.airbnb-confidence-label {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .airbnb-confidence-label {
+    display: inline;
+  }
+}
+
+.airbnb-confidence-high {
+  background: var(--turq-bg);
+  color: var(--turq);
+}
+
+.airbnb-confidence-high svg {
+  color: var(--turq);
+}
+
+.airbnb-confidence-medium {
+  background: rgba(184, 80, 48, 0.08);
+  color: var(--adobe);
+}
+
+.airbnb-confidence-medium svg {
+  color: var(--adobe);
+}
+
+.airbnb-confidence-low {
+  background: var(--surface-2);
+  color: var(--dust);
+}
+
+.airbnb-confidence-low svg {
+  color: var(--dust);
+}
+
+/* ─── Disclaimer ─── */
+.airbnb-detection-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: var(--space-3);
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--dust);
+  line-height: 1.5;
+  font-family: var(--font-primary);
+}
+
+.airbnb-detection-disclaimer svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--dust);
+}
+
+/* ─── Lightbox ─── */
+.airbnb-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: airbnbFadeIn 200ms ease-out;
+}
+
+@keyframes airbnbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.airbnb-lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: background 150ms;
+}
+
+.airbnb-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.airbnb-lightbox-content {
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.airbnb-lightbox-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.airbnb-lightbox-caption {
+  margin-top: var(--space-2);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-family: var(--font-primary);
+  text-align: center;
+}
+
+/* ─── Mobile Responsive — Airbnb Detection ─── */
+@media (max-width: 640px) {
+  .airbnb-detection-header {
+    padding: 12px 14px;
+  }
+
+  .airbnb-detection-title {
+    font-size: 13px;
+  }
+
+  .airbnb-detection-body {
+    padding: 12px;
+  }
+
+  .airbnb-room-img-wrap {
+    width: 48px;
+    height: 48px;
+  }
+
+  .airbnb-room-gallery-thumb {
+    width: 64px;
+    height: 48px;
+  }
+
+  .airbnb-room-full-img {
+    height: 120px;
+  }
+
+  .airbnb-room-amenity-item {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+}

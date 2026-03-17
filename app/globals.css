@@ -1,0 +1,130 @@
+/* ═══════════════════════════════════════════════════════
+   ABODE — Global Styles
+   ═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,200;9..40,300;9..40,400;9..40,500;9..40,700&family=Roboto+Mono:wght@300;400&display=swap');
+
+@import '../styles/tokens.css';
+@import '../styles/reset.css';
+@import '../styles/typography.css';
+@import '../styles/animations.css';
+@import '../styles/components/buttons.css';
+@import '../styles/components/cards.css';
+@import '../styles/components/forms.css';
+@import '../styles/components/nav.css';
+@import '../styles/components/quiz.css';
+@import '../styles/components/blog.css';
+@import '../styles/components/property-details.css';
+@import '../styles/components/app-shell.css';
+@import '../styles/components/abby.css';
+
+/* ─── Utility Classes ─── */
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 var(--space-6);
+  }
+}
+
+.section {
+  padding: var(--space-6) 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: var(--space-10) 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section {
+    padding: var(--space-12) 0;
+  }
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: var(--turq-light);
+  color: var(--ink);
+}
+
+/* ─── Turquoise accent utilities ─── */
+.accent {
+  color: var(--turq);
+}
+
+.section-offset {
+  background: var(--surface);
+}
+
+/* Section label / pill eyebrow */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--turq);
+  background: var(--turq-bg);
+  border: 1px solid var(--turq-light);
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  margin-bottom: var(--space-2);
+}
+
+/* Inline turquoise link */
+a.link-accent {
+  color: var(--turq);
+  text-decoration: underline;
+  text-decoration-color: var(--turq-light);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+
+a.link-accent:hover {
+  text-decoration-color: var(--turq);
+}
+
+/* Divider with turquoise accent */
+.divider-accent {
+  height: 2px;
+  width: 40px;
+  background: var(--turq);
+  border-radius: 2px;
+  margin: var(--space-2) 0;
+}
+
+/* Elevated surface — white card on ivory bg */
+.surface-elevated {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Turquoise badge */
+.badge-turq {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--turq-bg);
+  color: var(--turq-mid);
+  border: 1px solid var(--turq-light);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}

@@ -1,0 +1,727 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,200;9..40,300;9..40,400;9..40,500;9..40,700&family=Roboto+Mono:wght@300;400&display=swap');
+
+  :root {
+    --bg: #E8E2D8;
+    --surface: #F4F0EA;
+    --surface-2: #EDE8DF;
+    --surface-raised: #FAFAF7;
+    --ink: #1C1916;
+    --ink-mid: #3A342C;
+    --dust: #8C8478;
+    --border: rgba(28,25,22,0.10);
+    --border-strong: rgba(28,25,22,0.18);
+    --turq: #1A8C8C;
+    --turq-mid: #147878;
+    --turq-light: #C0DEDE;
+    --turq-bg: #EAF4F4;
+    --adobe: #B85030;
+    --adobe-light: #EED4C8;
+    --adobe-dark: #7C3018;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .root {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    padding: 40px;
+  }
+
+  .sec { margin-bottom: 56px; }
+
+  .sec-label {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--dust);
+    margin-bottom: 20px;
+  }
+
+  /* ── WORDMARK ── */
+  .wm-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .wm {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    border-radius: 100px;
+  }
+
+  .wm-light { background: var(--surface-raised); border: 1px solid var(--border); }
+  .wm-dark  { background: var(--ink); }
+  .wm-turq  { background: var(--turq); }
+
+  .wm-glyph { width: 28px; height: 28px; flex-shrink: 0; }
+
+  .wm-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .wm-light .wm-name { color: var(--ink); }
+  .wm-dark  .wm-name { color: var(--surface); }
+  .wm-turq  .wm-name { color: white; }
+
+  .wm-dot { color: var(--turq); }
+  .wm-dark  .wm-dot { color: var(--turq-light); }
+  .wm-turq  .wm-dot { color: rgba(255,255,255,0.5); }
+
+  .logo-note {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 8.5px;
+    color: var(--dust);
+    letter-spacing: 0.06em;
+    margin-top: 16px;
+    line-height: 1.9;
+    max-width: 640px;
+    border-left: 2px solid var(--turq-light);
+    padding-left: 12px;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    display: flex;
+    align-items: center;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 8px 8px 20px;
+    width: fit-content;
+    margin-top: 28px;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 28px;
+    text-decoration: none;
+  }
+
+  .nav-logo-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .nav-logo .dot { color: var(--turq); }
+
+  .nav-links {
+    display: flex;
+    gap: 24px;
+    margin-right: 20px;
+  }
+
+  .nav-link {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--dust);
+    letter-spacing: 0.02em;
+  }
+
+  .nav-cta {
+    padding: 9px 20px;
+    background: var(--turq);
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    letter-spacing: 0.03em;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(26,140,140,0.25);
+  }
+
+  /* ── PALETTE ── */
+  .pal { display: flex; gap: 10px; flex-wrap: wrap; }
+  .sw { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .sw-dot { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--border-strong); }
+  .sw-name { font-family: 'Roboto Mono', monospace; font-size: 7.5px; color: var(--dust); text-align: center; line-height: 1.4; }
+
+  /* ── TYPE ── */
+  .type-demo {
+    background: var(--surface-raised);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    padding: 40px;
+  }
+
+  .t-eyebrow {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--adobe);
+    margin-bottom: 16px;
+    font-weight: 300;
+  }
+
+  .t-h1 {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 52px;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .t-h1 span { color: var(--turq-mid); }
+
+  .t-finally {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 200;
+    font-size: 52px;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--turq-mid);
+    margin-bottom: 28px;
+    font-style: italic;
+  }
+
+  .t-h2 {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  .t-body {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--ink-mid);
+    max-width: 480px;
+    margin-bottom: 14px;
+  }
+
+  .t-mono {
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 300;
+    font-size: 11px;
+    color: var(--dust);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .btn {
+    padding: 14px 28px;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary { background: var(--turq); color: white; box-shadow: 0 2px 8px rgba(26,140,140,0.25); }
+  .btn-ink     { background: var(--ink); color: var(--surface); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border-strong); color: var(--ink-mid); }
+  .btn-adobe   { background: var(--adobe); color: white; }
+  .btn-ghost   { background: transparent; border: 1.5px solid var(--turq); color: var(--turq); }
+
+  /* ── TRUST ── */
+  .trust {
+    background: var(--adobe-light);
+    border: 1px solid rgba(184,80,48,0.15);
+    border-radius: 100px;
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: fit-content;
+  }
+
+  .trust-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--adobe);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .trust-txt {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--adobe-dark);
+    line-height: 1;
+  }
+
+  /* ── GUARANTEE BADGE ── */
+  .guarantee {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--adobe-light);
+    border: 1px solid rgba(184,80,48,0.12);
+    border-radius: 14px;
+    padding: 14px 18px;
+    width: fit-content;
+    max-width: 440px;
+  }
+
+  .guarantee-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+
+  .guarantee-txt strong {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--adobe-dark);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .guarantee-txt span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--adobe);
+    line-height: 1.5;
+  }
+
+  /* ── STATS ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  .stat {
+    background: var(--surface-raised);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--turq);
+    padding: 28px 24px;
+  }
+
+  .stat-val {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 42px;
+    line-height: 1;
+    color: var(--turq-mid);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    color: var(--dust);
+    line-height: 1.5;
+  }
+
+  /* ── QUIZ ── */
+  .quiz-card {
+    background: var(--surface-raised);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    padding: 32px;
+  }
+
+  .prog {
+    height: 2px;
+    background: var(--surface-2);
+    border-radius: 99px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .prog-fill { width: 40%; height: 100%; background: var(--turq); border-radius: 99px; }
+
+  .q-step {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dust);
+    margin-bottom: 12px;
+    font-weight: 300;
+  }
+
+  .q-hed {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 20px;
+    color: var(--ink);
+    margin-bottom: 22px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .q-opts { display: flex; flex-direction: column; gap: 8px; }
+
+  .q-opt {
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--ink-mid);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+  }
+
+  .q-opt.on {
+    background: var(--turq-bg);
+    border-color: var(--turq);
+    color: var(--turq-mid);
+    font-weight: 500;
+  }
+
+  .q-hint {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 8.5px;
+    color: var(--dust);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── RESULTS ── */
+  .results-card {
+    background: var(--ink);
+    border-radius: 20px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .r-eye {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(244,240,234,0.3);
+    margin-bottom: 20px;
+    font-weight: 300;
+  }
+
+  .r-label {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 200;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(244,240,234,0.4);
+    margin-bottom: 6px;
+  }
+
+  .r-num {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 56px;
+    line-height: 0.95;
+    color: var(--surface);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+
+  .r-range {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    color: rgba(244,240,234,0.25);
+    margin-bottom: 24px;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+  }
+
+  .r-tiers {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .r-tier {
+    background: rgba(244,240,234,0.05);
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(244,240,234,0.07);
+  }
+
+  .r-tier-n {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 7.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(244,240,234,0.28);
+    margin-bottom: 6px;
+    font-weight: 300;
+  }
+
+  .r-tier-v {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--surface);
+    letter-spacing: -0.01em;
+  }
+
+  .r-tier.mid .r-tier-v { color: var(--turq-light); }
+
+  .r-btn-main {
+    width: 100%;
+    padding: 15px 20px;
+    background: var(--turq);
+    border: none;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 16px rgba(26,140,140,0.3);
+  }
+
+  .r-btn-ghost {
+    width: 100%;
+    padding: 13px 20px;
+    background: transparent;
+    border: 1px solid rgba(244,240,234,0.14);
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    color: rgba(244,240,234,0.4);
+    cursor: pointer;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+</style>
+
+<div class="root">
+
+  <!-- 01 LOGO -->
+  <div class="sec">
+    <div class="sec-label">01 — Logo · House glyph + ABODE. wordmark · Three variants</div>
+
+    <div class="wm-row">
+
+      <!-- Light (default — use on sand, surface, white backgrounds) -->
+      <div class="wm wm-light">
+        <svg class="wm-glyph" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="#1C1916" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="#1C1916" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="#1A8C8C" stroke-width="1.1" fill="rgba(26,140,140,0.08)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="#1A8C8C" stroke-width="1.1"/>
+        </svg>
+        <div class="wm-name">ABODE<span class="wm-dot"> .</span></div>
+      </div>
+
+      <!-- Dark (use on --ink or dark backgrounds) -->
+      <div class="wm wm-dark">
+        <svg class="wm-glyph" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="rgba(244,240,234,0.45)" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="rgba(244,240,234,0.45)" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="#C0DEDE" stroke-width="1.1" fill="rgba(192,222,222,0.12)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="#C0DEDE" stroke-width="1.1"/>
+        </svg>
+        <div class="wm-name">ABODE<span class="wm-dot"> .</span></div>
+      </div>
+
+      <!-- Turquoise (use on --turq button fills or CTAs) -->
+      <div class="wm wm-turq">
+        <svg class="wm-glyph" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="rgba(255,255,255,0.55)" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="rgba(255,255,255,0.55)" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="rgba(255,255,255,0.9)" stroke-width="1.1" fill="rgba(255,255,255,0.15)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="rgba(255,255,255,0.9)" stroke-width="1.1"/>
+        </svg>
+        <div class="wm-name">ABODE<span class="wm-dot"> .</span></div>
+      </div>
+
+    </div>
+
+    <div class="logo-note">
+      GLYPH — house outline (ink stroke) + turquoise door accent + centre divider line · always SVG, never rasterise<br>
+      WORDMARK — DM Sans 700 · uppercase · letter-spacing 0.14em · turquoise dot suffix ( . )<br>
+      CLEAR SPACE — minimum 1× glyph height on all sides<br>
+      DO NOT — recolour glyph body, stretch proportions, remove the dot, use on low-contrast backgrounds<br>
+      IMPLEMENTED IN — NavBar.js (AbodeLogo component, exports variant prop: "light" | "dark" | "turq")
+    </div>
+
+    <!-- Nav usage example (current live spec) -->
+    <div class="nav">
+      <div class="nav-logo">
+        <svg style="width:20px;height:20px;" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="12" width="26" height="15" rx="1" stroke="#1C1916" stroke-width="1.2" fill="none"/>
+          <polyline points="1,12 14,2 27,12" stroke="#1C1916" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          <rect x="10" y="19" width="8" height="8" rx="0.5" stroke="#1A8C8C" stroke-width="1.1" fill="rgba(26,140,140,0.08)"/>
+          <line x1="14" y1="19" x2="14" y2="27" stroke="#1A8C8C" stroke-width="1.1"/>
+        </svg>
+        <span class="nav-logo-name">ABODE<span class="dot"> .</span></span>
+      </div>
+      <div class="nav-links">
+        <span class="nav-link">How It Works</span>
+        <span class="nav-link">Learn</span>
+        <span class="nav-link">Pricing</span>
+        <span class="nav-link">Free Estimate</span>
+      </div>
+      <button class="nav-cta">Get My Estimate</button>
+    </div>
+  </div>
+
+  <!-- 02 COLOR SYSTEM -->
+  <div class="sec">
+    <div class="sec-label">02 — Color System · All CSS custom properties</div>
+    <div class="pal">
+      <div class="sw"><div class="sw-dot" style="background:#E8E2D8;"></div><div class="sw-name">Warm sand<br>--bg</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#FAFAF7;"></div><div class="sw-name">Surface raised<br>--surface-raised</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#F4F0EA;"></div><div class="sw-name">Surface<br>--surface</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#1A8C8C;border-color:transparent;"></div><div class="sw-name">Turquoise<br>--turq</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#147878;border-color:transparent;"></div><div class="sw-name">Turq mid<br>--turq-mid</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#C0DEDE;"></div><div class="sw-name">Turq light<br>--turq-light</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#EAF4F4;"></div><div class="sw-name">Turq tint<br>--turq-bg</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#B85030;border-color:transparent;"></div><div class="sw-name">Adobe<br>--adobe</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#EED4C8;"></div><div class="sw-name">Adobe light<br>--adobe-light</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#7C3018;border-color:transparent;"></div><div class="sw-name">Adobe dark<br>--adobe-dark</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#8C8478;"></div><div class="sw-name">Dust<br>--dust</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#3A342C;border-color:transparent;"></div><div class="sw-name">Ink mid<br>--ink-mid</div></div>
+      <div class="sw"><div class="sw-dot" style="background:#1C1916;border-color:transparent;"></div><div class="sw-name">Ink deep<br>--ink</div></div>
+    </div>
+  </div>
+
+  <!-- 03 TYPE SCALE -->
+  <div class="sec">
+    <div class="sec-label">03 — Type Scale · DM Sans only · Roboto Mono for data, labels, eyebrows</div>
+    <div class="type-demo">
+      <div class="t-eyebrow">Cost Segregation for Short-Term Rentals</div>
+      <div class="t-h1">Your Airbnb is sitting<br>on a tax <span>deduction.</span></div>
+      <div class="t-finally">Most owners never find it.</div>
+      <div class="t-h2">Three steps to thousands in tax savings</div>
+      <div class="t-body">Abode generates an IRS-compliant cost segregation study for your short-term rental in 1–3 business days. STR owners typically identify $30K–$150K in first-year depreciation deductions — at a fraction of what engineering firms charge.</div>
+      <div class="t-mono">IRS-guided methodology · PDF + Excel deliverable · $499 flat · 90-day money-back guarantee</div>
+    </div>
+  </div>
+
+  <!-- 04 BUTTONS -->
+  <div class="sec">
+    <div class="sec-label">04 — Buttons · Pill radius (border-radius: 100px) on all interactives</div>
+    <div class="btn-row">
+      <button class="btn btn-primary">Calculate My Tax Savings →</button>
+      <button class="btn btn-ink">Get My Estimate</button>
+      <button class="btn btn-ghost">View Sample Study</button>
+      <button class="btn btn-outline">How It Works</button>
+      <button class="btn btn-adobe">Start My Study — $499</button>
+    </div>
+  </div>
+
+  <!-- 05 TRUST + GUARANTEE -->
+  <div class="sec">
+    <div class="sec-label">05 — Trust Strip + 90-Day Guarantee Badge</div>
+    <div style="display:flex; flex-direction:column; gap:16px; align-items:flex-start;">
+
+      <div class="trust">
+        <div class="trust-dot">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1L7.5 4.5L11.5 4.9L8.7 7.5L9.5 11.5L6 9.6L2.5 11.5L3.3 7.5L0.5 4.9L4.5 4.5Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="trust-txt">IRS Cost Seg ATG methodology · CPA-ready PDF + Excel · 90-day money-back</div>
+      </div>
+
+      <div class="guarantee">
+        <svg class="guarantee-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2L3.5 4.5V9.5C3.5 13.09 6.26 16.45 10 17.5C13.74 16.45 16.5 13.09 16.5 9.5V4.5L10 2Z"
+            stroke="#B85030" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M7 10L9 12L13 8" stroke="#B85030" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="guarantee-txt">
+          <strong>90-Day Money-Back Guarantee</strong>
+          <span>Not satisfied for any reason — full refund, no questions asked.<br>
+          Covers the $499 study fee only · does not cover tax liability or audit outcomes.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 06 STATS -->
+  <div class="sec">
+    <div class="sec-label">06 — Proof / Stats · Rendered on dark gradient section (--grad-dark)</div>
+    <div class="grid3">
+      <div class="stat">
+        <div class="stat-val">$61,847</div>
+        <div class="stat-label">Avg. first-year deduction claimed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">22%</div>
+        <div class="stat-label">Of property value reclassified, on average</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">3 days</div>
+        <div class="stat-label">Business days to delivery</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 07 QUIZ + RESULTS -->
+  <div class="sec">
+    <div class="sec-label">07 — Core Components · Quiz step card + Results card</div>
+    <div class="grid2">
+
+      <div class="quiz-card">
+        <div class="prog"><div class="prog-fill"></div></div>
+        <div class="q-step">Step 4 of 9 — Property details</div>
+        <div class="q-hed">When did you purchase this property?</div>
+        <div class="q-opts">
+          <div class="q-opt">2025 — post Jan 19 <span class="q-hint">100% bonus dep.</span></div>
+          <div class="q-opt on">2024 <span class="q-hint">60% bonus dep.</span></div>
+          <div class="q-opt">2023 <span class="q-hint">80% bonus dep.</span></div>
+          <div class="q-opt">2022 or earlier <span class="q-hint">catch-up via Form 3115</span></div>
+        </div>
+      </div>
+
+      <div class="results-card">
+        <div class="r-eye">Your Abode Estimate</div>
+        <div class="r-label">Likely first-year tax savings</div>
+        <div class="r-num">$19,700</div>
+        <div class="r-range">Range $14,800 – $25,600 · based on inputs provided</div>
+        <div class="r-tiers">
+          <div class="r-tier"><div class="r-tier-n">Conservative</div><div class="r-tier-v">$14,800</div></div>
+          <div class="r-tier mid"><div class="r-tier-n">Likely</div><div class="r-tier-v">$19,700</div></div>
+          <div class="r-tier"><div class="r-tier-n">Optimistic</div><div class="r-tier-v">$25,600</div></div>
+        </div>
+        <button class="r-btn-main">Start My Full Study — $499 <span>→</span></button>
+        <button class="r-btn-ghost">Send me the full breakdown first</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
