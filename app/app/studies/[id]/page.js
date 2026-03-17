@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -45,8 +45,7 @@ function pct(n) {
 // ═════════════════════════════════════════════════════════════════════
 
 export default function StudyViewerPage({ params }) {
-  const resolvedParams = use(params);
-  const studyId = resolvedParams.id;
+  const studyId = params.id;
 
   const [row, setRow] = useState(null);      // Supabase row (or session fallback)
   const [study, setStudy] = useState(null);   // The generateStudy() output
@@ -62,18 +61,20 @@ export default function StudyViewerPage({ params }) {
       try {
         // 1. Try Supabase
         const supabase = getBrowserClient();
-        const { data, error: sbErr } = await supabase
-          .from("studies")
-          .select("*, properties(*)")
-          .eq("id", studyId)
-          .single();
+        if (supabase) {
+          const { data } = await supabase
+            .from("studies")
+            .select("*, properties(*)")
+            .eq("id", studyId)
+            .single();
 
-        if (!cancelled && data) {
-          setRow(data);
-          setStudy(data.study_data);
-          setProperty(data.properties);
-          setLoading(false);
-          return;
+          if (!cancelled && data) {
+            setRow(data);
+            setStudy(data.study_data);
+            setProperty(data.properties);
+            setLoading(false);
+            return;
+          }
         }
 
         // 2. Fallback: sessionStorage (pre-Supabase flow)
@@ -81,7 +82,6 @@ export default function StudyViewerPage({ params }) {
           const cached = sessionStorage.getItem("abode_latest_study");
           if (cached) {
             const parsed = JSON.parse(cached);
-            // Could be the raw study object or wrapped
             const studyData = parsed.study_data || parsed;
             setRow(parsed);
             setStudy(studyData);
@@ -99,7 +99,6 @@ export default function StudyViewerPage({ params }) {
       } catch (err) {
         if (!cancelled) {
           console.error("[StudyViewer] load error:", err);
-          // Try sessionStorage as last resort
           try {
             const cached = sessionStorage.getItem("abode_latest_study");
             if (cached) {

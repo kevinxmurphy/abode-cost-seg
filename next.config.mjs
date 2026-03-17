@@ -50,15 +50,14 @@ export default withSentryConfig(nextConfig, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
 
   // Upload source maps in production builds so stack traces are readable
-  silent: true, // suppress CLI output during build
+  silent: true,
   widenClientFileUpload: true,
 
   // Avoid Sentry wrapping every server component — keeps bundle size down
-  webpack: {
-    automaticVercelMonitors: false,
-    treeshake: {
-      // Tree-shake Sentry logger statements in production builds
-      removeDebugLogging: true,
-    },
+  automaticVercelMonitors: false,
+
+  // Tree-shake Sentry debug statements in production builds
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
   },
 });
