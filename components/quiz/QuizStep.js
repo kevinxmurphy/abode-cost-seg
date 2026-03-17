@@ -21,6 +21,7 @@ export default function QuizStep({
   showTooltip,
   onToggleTooltip,
   answers,
+  airbnbJob,
 }) {
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef(null);
@@ -140,6 +141,16 @@ export default function QuizStep({
           value={value || {}}
           onChange={onChange}
           placeholder={step.placeholder}
+          phase={step.phase || "full"}
+        />
+      )}
+
+      {step.type === "address-confirm" && (
+        <AddressInput
+          value={value || {}}
+          onChange={onChange}
+          placeholder=""
+          phase="confirm"
         />
       )}
 
@@ -147,9 +158,16 @@ export default function QuizStep({
         <AirbnbUrlInput
           value={value}
           onChange={onChange}
-          onAutoAdvance={onAutoAdvance}
           placeholder={step.placeholder}
           propertyAddress={answers?.propertyAddress}
+          airbnbJob={airbnbJob}
+        />
+      )}
+
+      {step.type === "airbnb-verify" && (
+        <AirbnbVerifyStep
+          airbnbJob={airbnbJob}
+          onChange={onChange}
         />
       )}
 
@@ -262,7 +280,7 @@ function MultiSelect({ options, value, onChange }) {
 }
 
 /* ─── Address Autocomplete + Property Confirmation ─── */
-function AddressInput({ value, onChange, placeholder }) {
+function AddressInput({ value, onChange, placeholder, phase = "full" }) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -282,6 +300,16 @@ function AddressInput({ value, onChange, placeholder }) {
   useEffect(() => {
     if (inputRef.current && !selectedAddress && !manualMode) inputRef.current.focus();
   }, [selectedAddress, manualMode]);
+
+  // Sync when parent updates the address (e.g., Realtor lookup completes while on another step)
+  useEffect(() => {
+    if (value?.fullAddress && value?.propertyDetails?.sqft > 0 && !isEditing) {
+      setSelectedAddress((prev) => {
+        if (!prev || prev.propertyDetails?.sqft === 0) return value;
+        return prev;
+      });
+    }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch autocomplete suggestions from Google Places via our API proxy
   useEffect(() => {
@@ -380,7 +408,8 @@ function AddressInput({ value, onChange, placeholder }) {
       `${address}, ${city}, ${state} ${zip}`.trim();
 
     // Set a provisional selected state immediately (with empty property details)
-    // so the UI shows the property card right away, then fills in details
+    // so the UI shows the property card right away, then fills in details.
+    // fullAddress being set also enables canProceed for the "entry" phase.
     const provisional = {
       address,
       city,
@@ -397,7 +426,7 @@ function AddressInput({ value, onChange, placeholder }) {
     setSelectedAddress(provisional);
     onChange(provisional);
 
-    // Trigger Zillow property lookup in background
+    // Trigger property lookup in background (populates the confirm step)
     await lookupPropertyDetails({ address, city, state, zip, fullAddress });
   }
 
@@ -1141,201 +1170,67 @@ function CurrencyOptionInput({ step, value, onChange }) {
   );
 }
 
-/* ─── Airbnb / VRBO URL Input (separate step) ─── */
-function AirbnbUrlInput({ value, onChange, onAutoAdvance, placeholder, propertyAddress }) {
+/* ─── Airbnb URL Input — non-blocking version ─── */
+// QuizShell owns the job lifecycle. This step just captures the URL
+// and calls onChange immediately so the shell can fire the background job.
+// The actual listing result is shown on the next step (airbnb-verify).
+function AirbnbUrlInput({ value, onChange, placeholder, propertyAddress }) {
   const [url, setUrl] = useState(value?.url || "");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [urlHint, setUrlHint] = useState("");
-  const [listingData, setListingData] = useState(value?.listing || null);
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (inputRef.current && !listingData) inputRef.current.focus();
-  }, [listingData]);
+    if (inputRef.current) inputRef.current.focus();
+  }, []);
 
-  async function fetchListing(urlToFetch) {
-    const roomId = parseAirbnbUrl(urlToFetch);
+  function commitUrl(rawUrl) {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) {
+      onChange(null);
+      return;
+    }
+    const roomId = parseAirbnbUrl(trimmed);
     if (!roomId) {
       setError("Please enter a valid Airbnb listing URL (e.g. airbnb.com/rooms/12345)");
       return;
     }
     setError("");
-    setLoading(true);
+    // Signal parent immediately — shell fires the background job
+    onChange({ url: trimmed });
+  }
 
-    try {
-      // Check client cache first
-      const cacheKey = buildAirbnbCacheKey(roomId);
-      const cached = clientCacheGet(cacheKey);
-      if (cached) {
-        setListingData(cached);
-        onChange({ url: urlToFetch, listing: cached });
-        return;
-      }
-
-      // Step 1 — fire the job, get runId immediately
-      const startRes = await fetch("/api/airbnb/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urlToFetch }),
-      });
-      const startData = await startRes.json();
-
-      // Already cached server-side
-      if (startData.cached && startData.listing) {
-        const listing = startData.listing;
-        clientCacheSet(cacheKey, listing);
-        sessionSave("lastAirbnbListing", listing);
-        setListingData(listing);
-        onChange({ url: urlToFetch, listing });
-        return;
-      }
-
-      if (startData.fallback || !startData.runId) {
-        setError(startData.message || "Could not fetch listing. You can skip this step and continue.");
-        return;
-      }
-
-      // Step 2 — poll every 3s until done (max ~90s)
-      const { runId, listingUrl } = startData;
-      const pollUrl = `/api/airbnb/poll?runId=${encodeURIComponent(runId)}&roomId=${encodeURIComponent(roomId)}&listingUrl=${encodeURIComponent(listingUrl || urlToFetch)}`;
-      const maxAttempts = 30; // 30 × 3s = 90s max
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        await new Promise((r) => setTimeout(r, 3000));
-
-        const pollRes = await fetch(pollUrl);
-        const pollData = await pollRes.json();
-
-        if (pollData.status === "done" && pollData.listing) {
-          const listing = pollData.listing;
-          clientCacheSet(cacheKey, listing);
-          sessionSave("lastAirbnbListing", listing);
-          setListingData(listing);
-          onChange({ url: urlToFetch, listing });
-          return;
-        }
-
-        if (pollData.status === "failed") {
-          setError(pollData.message || "Could not fetch listing. You can skip this step and continue.");
-          return;
-        }
-
-        // status === "running" — keep polling
-      }
-
-      // Timed out on client side
-      setError("Airbnb lookup is taking longer than expected. You can skip this step and continue.");
-
-    } catch {
-      setError("Could not fetch listing. Please check the URL and try again, or skip this step.");
-    } finally {
-      setLoading(false);
+  function handleChange(e) {
+    const v = e.target.value;
+    setUrl(v);
+    setError("");
+    if (v.length > 10 && !v.includes("airbnb.com")) {
+      setUrlHint("Tip: Paste a URL like airbnb.com/rooms/12345");
+    } else {
+      setUrlHint("");
     }
+    // If they cleared the field, reset parent value
+    if (!v) onChange(null);
   }
 
   function handlePaste(e) {
     const pasted = e.clipboardData?.getData("text") || "";
     if (isValidAirbnbInput(pasted)) {
-      e.preventDefault(); // prevent browser from also firing onChange with doubled value
+      e.preventDefault();
       setUrl(pasted);
-      setTimeout(() => fetchListing(pasted), 50);
+      setUrlHint("");
+      setError("");
+      // Slight delay so state flush happens first
+      setTimeout(() => commitUrl(pasted), 30);
     }
   }
 
   function handleSkip() {
     onChange(null);
-    onAutoAdvance(null);
   }
 
-  function handleClear() {
-    setListingData(null);
-    setUrl("");
-    setError("");
-    onChange(null);
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }
+  const isLinked = !!(value?.url && !error);
 
-  // ─── Listing confirmed: show card ───
-  if (listingData) {
-    return (
-      <div className="quiz-address-wrapper">
-        <div className="quiz-airbnb-card">
-          {/* Hero image */}
-          <div className="quiz-airbnb-hero">
-            <img
-              src={listingData.thumbnail}
-              alt={listingData.title}
-              className="quiz-airbnb-hero-img"
-            />
-            {listingData.isSuperhost && (
-              <span className="quiz-airbnb-superhost">Superhost</span>
-            )}
-          </div>
-
-          {/* Property info */}
-          <div className="quiz-airbnb-info">
-            <h3 className="quiz-airbnb-title">{listingData.title}</h3>
-            <p className="quiz-airbnb-location">
-              {listingData.city}, {listingData.stateFull || listingData.state}
-            </p>
-
-            {/* Rating & reviews */}
-            <div className="quiz-airbnb-social-proof">
-              <div className="quiz-airbnb-rating">
-                <Star size={14} fill="var(--turq)" stroke="var(--turq)" />
-                <span className="quiz-airbnb-rating-value">{listingData.rating}</span>
-                <span className="quiz-airbnb-rating-dot">&middot;</span>
-                <span className="quiz-airbnb-reviews">{listingData.reviewCount} reviews</span>
-              </div>
-              <div className="quiz-airbnb-compliment">
-                Sweet property! Looks like you&apos;re doing great with {listingData.reviewCount} reviews and a {listingData.rating}-star rating
-              </div>
-            </div>
-
-            {/* Specs */}
-            <div className="quiz-airbnb-specs">
-              <span>{listingData.bedrooms} bed{listingData.bedrooms !== 1 ? "s" : ""}</span>
-              <span className="quiz-airbnb-spec-dot">&middot;</span>
-              <span>{listingData.baths} bath{listingData.baths !== 1 ? "s" : ""}</span>
-              <span className="quiz-airbnb-spec-dot">&middot;</span>
-              <span>{listingData.guests} guests</span>
-              <span className="quiz-airbnb-spec-dot">&middot;</span>
-              <span>{listingData.propertyType}</span>
-            </div>
-
-            {/* Amenity highlights */}
-            {listingData.amenitySummary && (
-              <div className="quiz-airbnb-amenity-badges">
-                {getTopAmenities(listingData).map((a) => (
-                  <span key={a} className="quiz-airbnb-amenity-badge">{a}</span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Confirmed indicator */}
-          <div className="quiz-airbnb-actions">
-            <div className="quiz-property-confirmed">
-              <Check size={14} />
-              Listing linked — nice property!
-            </div>
-          </div>
-        </div>
-
-        <button
-          className="quiz-tooltip-toggle"
-          style={{ marginTop: "var(--space-2)" }}
-          onClick={handleClear}
-          type="button"
-        >
-          Use a different listing
-        </button>
-      </div>
-    );
-  }
-
-  // ─── URL input phase ───
   return (
     <div className="quiz-address-wrapper">
       <div className="quiz-airbnb-input-group">
@@ -1345,53 +1240,36 @@ function AirbnbUrlInput({ value, onChange, onAutoAdvance, placeholder, propertyA
           type="text"
           className="quiz-address-input"
           value={url}
-          onChange={(e) => {
-            const v = e.target.value;
-            setUrl(v);
-            setError("");
-            if (v.length > 10 && !v.includes("airbnb.com")) {
-              setUrlHint("Tip: Paste a URL like airbnb.com/rooms/12345");
-            } else {
-              setUrlHint("");
-            }
-          }}
+          onChange={handleChange}
           onPaste={handlePaste}
+          onBlur={() => { if (url) commitUrl(url); }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && url) {
               e.preventDefault();
               e.stopPropagation();
-              fetchListing(url);
+              commitUrl(url);
             }
           }}
           placeholder={placeholder || "Paste your Airbnb listing URL..."}
           autoComplete="off"
-          disabled={loading}
         />
-        {loading && (
-          <div className="quiz-airbnb-loading">
-            <Loader2 size={18} className="quiz-airbnb-spinner" />
+        {isLinked && (
+          <div className="quiz-address-check">
+            <Check size={16} />
           </div>
         )}
       </div>
 
-      {loading && (
-        <div className="quiz-airbnb-skeleton">
-          <div className="quiz-airbnb-skeleton-hero" />
-          <div className="quiz-airbnb-skeleton-bar" style={{ width: "75%" }} />
-          <div className="quiz-airbnb-skeleton-bar" style={{ width: "50%" }} />
-          <div className="quiz-airbnb-skeleton-row">
-            <div className="quiz-airbnb-skeleton-bar" />
-            <div className="quiz-airbnb-skeleton-bar" />
-            <div className="quiz-airbnb-skeleton-bar" />
-          </div>
-          <div className="quiz-airbnb-loading-text">
-            <span>Pulling your listing photos, amenities, and property details...</span>
-          </div>
+      {/* Background lookup indicator */}
+      {isLinked && (
+        <div className="quiz-airbnb-background-notice">
+          <Loader2 size={13} className="quiz-airbnb-spinner-sm" />
+          <span>Looking up your listing in the background — we&apos;ll show it on the next screen.</span>
         </div>
       )}
 
-      {urlHint && !error && !loading && (
-        <div className="quiz-airbnb-url-hint" style={{ marginTop: 8, fontSize: 13, color: "var(--dust)" }}>
+      {urlHint && !error && !isLinked && (
+        <div style={{ marginTop: 8, fontSize: 13, color: "var(--dust)" }}>
           {urlHint}
         </div>
       )}
@@ -1402,18 +1280,7 @@ function AirbnbUrlInput({ value, onChange, onAutoAdvance, placeholder, propertyA
         </div>
       )}
 
-      {!loading && url && !error && (
-        <button
-          className="btn btn-primary"
-          style={{ marginTop: "var(--space-2)", width: "100%" }}
-          onClick={() => fetchListing(url)}
-        >
-          <Search size={16} />
-          Fetch Listing
-        </button>
-      )}
-
-      {/* Skip button — prominent since this step is optional */}
+      {/* Skip button */}
       <button
         className="btn btn-subtle"
         style={{
@@ -1425,10 +1292,10 @@ function AirbnbUrlInput({ value, onChange, onAutoAdvance, placeholder, propertyA
         onClick={handleSkip}
         type="button"
       >
-        Skip this step
+        Skip — I&apos;ll continue without a listing
       </button>
 
-      {/* Help find listing using property address */}
+      {/* Help find listing */}
       {propertyAddress && (propertyAddress.address || propertyAddress.city) && (
         <div style={{ marginTop: "var(--space-2)", textAlign: "center", fontSize: 13, color: "var(--dust)" }}>
           Not sure of your URL?{" "}
@@ -1446,6 +1313,162 @@ function AirbnbUrlInput({ value, onChange, onAutoAdvance, placeholder, propertyA
           </a>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Airbnb Verify Step — shows background job result ─── */
+// Shown after address-confirm. By this point the Apify job has had ~20-30s
+// to complete while the user was entering address details.
+function AirbnbVerifyStep({ airbnbJob, onChange }) {
+  const { status, listing } = airbnbJob || { status: "idle", listing: null };
+
+  // Always signal parent that this step is "answered" (it's optional)
+  useEffect(() => {
+    onChange({ verified: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── No URL was submitted ───
+  if (status === "idle") {
+    return (
+      <div className="quiz-address-wrapper">
+        <div className="quiz-airbnb-skip-notice">
+          <div className="quiz-airbnb-skip-icon">🏠</div>
+          <p>No Airbnb listing linked — no problem. We&apos;ll build your estimate from the address details you provided.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Still loading ───
+  if (status === "starting" || status === "running") {
+    return (
+      <div className="quiz-address-wrapper">
+        <div className="quiz-airbnb-skeleton">
+          <div className="quiz-airbnb-skeleton-hero" />
+          <div className="quiz-airbnb-skeleton-bar" style={{ width: "70%" }} />
+          <div className="quiz-airbnb-skeleton-bar" style={{ width: "45%" }} />
+          <div className="quiz-airbnb-skeleton-row">
+            <div className="quiz-airbnb-skeleton-bar" />
+            <div className="quiz-airbnb-skeleton-bar" />
+            <div className="quiz-airbnb-skeleton-bar" />
+          </div>
+          <div className="quiz-airbnb-loading-text">
+            <Loader2 size={16} className="quiz-airbnb-spinner" />
+            <span>Still pulling your listing details — almost there...</span>
+          </div>
+        </div>
+        <p style={{ marginTop: "var(--space-2)", fontSize: 13, color: "var(--dust)", textAlign: "center" }}>
+          You can continue and we&apos;ll attach your listing to the estimate.
+        </p>
+      </div>
+    );
+  }
+
+  // ─── Failed or no listing returned ───
+  if (status === "failed" || !listing) {
+    return (
+      <div className="quiz-address-wrapper">
+        <div className="quiz-airbnb-skip-notice" style={{ borderColor: "var(--sand-border)" }}>
+          <div className="quiz-airbnb-skip-icon">😕</div>
+          <p>
+            We couldn&apos;t pull your listing details automatically. That&apos;s okay — your estimate won&apos;t be affected.
+          </p>
+          <p style={{ fontSize: 13, color: "var(--dust)", marginTop: 4 }}>
+            You can add your listing later in the property details walkthrough.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Listing loaded successfully ───
+  return (
+    <div className="quiz-address-wrapper">
+      <div className="quiz-airbnb-card">
+        {/* Hero image */}
+        {listing.thumbnail && (
+          <div className="quiz-airbnb-hero">
+            <img
+              src={listing.thumbnail}
+              alt={listing.title}
+              className="quiz-airbnb-hero-img"
+            />
+            {listing.isSuperhost && (
+              <span className="quiz-airbnb-superhost">Superhost</span>
+            )}
+          </div>
+        )}
+
+        {/* Property info */}
+        <div className="quiz-airbnb-info">
+          <h3 className="quiz-airbnb-title">{listing.title}</h3>
+          {(listing.city || listing.state) && (
+            <p className="quiz-airbnb-location">
+              {listing.city}{listing.city && listing.state ? ", " : ""}{listing.stateFull || listing.state}
+            </p>
+          )}
+
+          {/* Rating & reviews */}
+          {listing.rating && (
+            <div className="quiz-airbnb-social-proof">
+              <div className="quiz-airbnb-rating">
+                <Star size={14} fill="var(--turq)" stroke="var(--turq)" />
+                <span className="quiz-airbnb-rating-value">{listing.rating}</span>
+                {listing.reviewCount && (
+                  <>
+                    <span className="quiz-airbnb-rating-dot">&middot;</span>
+                    <span className="quiz-airbnb-reviews">{listing.reviewCount} reviews</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Specs */}
+          <div className="quiz-airbnb-specs">
+            {listing.bedrooms != null && (
+              <span>{listing.bedrooms} bed{listing.bedrooms !== 1 ? "s" : ""}</span>
+            )}
+            {listing.baths != null && (
+              <>
+                <span className="quiz-airbnb-spec-dot">&middot;</span>
+                <span>{listing.baths} bath{listing.baths !== 1 ? "s" : ""}</span>
+              </>
+            )}
+            {listing.guests != null && (
+              <>
+                <span className="quiz-airbnb-spec-dot">&middot;</span>
+                <span>{listing.guests} guests</span>
+              </>
+            )}
+            {listing.propertyType && (
+              <>
+                <span className="quiz-airbnb-spec-dot">&middot;</span>
+                <span>{listing.propertyType}</span>
+              </>
+            )}
+          </div>
+
+          {/* Top amenities */}
+          {listing.amenitySummary && (
+            <div className="quiz-airbnb-amenity-badges">
+              {getTopAmenities(listing).map((a) => (
+                <span key={a} className="quiz-airbnb-amenity-badge">{a}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Confirmed */}
+        <div className="quiz-airbnb-actions">
+          <div className="quiz-property-confirmed">
+            <Check size={14} />
+            Listing linked — we&apos;ll factor your amenities into the study
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -33,12 +33,17 @@ export default function QuizShell() {
   const [disqualified, setDisqualified] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
+  // Background Airbnb job — owned here so it persists across steps
+  const [airbnbJob, setAirbnbJob] = useState({
+    runId: null,
+    status: "idle", // "idle" | "starting" | "running" | "done" | "failed"
+    listing: null,
+  });
+
   // Build the active steps list by filtering out conditional steps
+  const isAirbnbUser = answers.propertyUse === "str" || answers.propertyUse === "mtr";
   const activeSteps = QUIZ_STEPS.filter((s) => {
-    if (s.id === "airbnbUrl") {
-      const use = answers.propertyUse;
-      return use === "str" || use === "mtr";
-    }
+    if (s.id === "airbnbUrl" || s.id === "airbnbVerify") return isAirbnbUser;
     return true;
   });
 
@@ -46,23 +51,92 @@ export default function QuizShell() {
   const progress = ((currentStep + 1) / totalSteps) * 100;
   const step = activeSteps[currentStep];
 
-  const currentAnswer = answers[step.id];
+  // Both address steps share answers.propertyAddress
+  const isAddressStep = step.id === "propertyAddressEntry" || step.id === "propertyAddressConfirm";
+  const currentAnswer = isAddressStep ? answers.propertyAddress : answers[step.id];
+
   const canProceed = (() => {
-    if (step.type === "airbnb-url") return true; // always skippable
+    if (step.type === "airbnb-url") return true;
+    if (step.type === "airbnb-verify") return true;
     if (!currentAnswer) return false;
     if (step.type === "multi") return currentAnswer.length > 0;
     if (step.type === "currency-option") return !!currentAnswer.selected;
-    if (step.type === "address") return currentAnswer && currentAnswer.confirmed === true;
+    // Address entry: just needs a selected address (not yet confirmed)
+    if (step.type === "address" && step.phase === "entry") return !!(currentAnswer?.fullAddress);
+    // Address confirm: needs confirmed === true
+    if (step.type === "address" || step.type === "address-confirm") return currentAnswer?.confirmed === true;
     return true;
   })();
+
+  // ─── Fire Airbnb job when URL is submitted ────────────────────────────────
+  useEffect(() => {
+    const url = answers.airbnbUrl?.url;
+    if (!url || airbnbJob.status !== "idle") return;
+
+    setAirbnbJob((j) => ({ ...j, status: "starting" }));
+
+    fetch("/api/airbnb/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.cached && data.listing) {
+          setAirbnbJob({ runId: null, status: "done", listing: data.listing });
+        } else if (data.runId) {
+          setAirbnbJob((j) => ({ ...j, runId: data.runId, status: "running" }));
+        } else {
+          setAirbnbJob((j) => ({ ...j, status: "failed" }));
+        }
+      })
+      .catch(() => setAirbnbJob((j) => ({ ...j, status: "failed" })));
+  }, [answers.airbnbUrl?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Poll in background when runId is set ────────────────────────────────
+  useEffect(() => {
+    if (!airbnbJob.runId || airbnbJob.status !== "running") return;
+
+    const url = answers.airbnbUrl?.url || "";
+    const roomId = airbnbJob.runId; // we'll use runId to track
+    const pollUrl = `/api/airbnb/poll?runId=${encodeURIComponent(airbnbJob.runId)}&listingUrl=${encodeURIComponent(url)}`;
+
+    let attempts = 0;
+    const maxAttempts = 30;
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(pollUrl);
+        const data = await res.json();
+        if (data.status === "done" && data.listing) {
+          clearInterval(interval);
+          setAirbnbJob({ runId: null, status: "done", listing: data.listing });
+        } else if (data.status === "failed" || attempts >= maxAttempts) {
+          clearInterval(interval);
+          setAirbnbJob((j) => ({ ...j, runId: null, status: "failed" }));
+        }
+      } catch {
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setAirbnbJob((j) => ({ ...j, runId: null, status: "failed" }));
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [airbnbJob.runId, airbnbJob.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Accuracy meter — how many optional enrichment fields are filled
   const filledSteps = Object.keys(answers).length;
   const accuracyPercent = Math.min(Math.round((filledSteps / totalSteps) * 100), 100);
 
   function handleAnswer(value) {
-    // If address step confirmed with yearBuilt, auto-derive propertyAge
-    if (step.id === "propertyAddress" && value && value.propertyDetails?.yearBuilt) {
+    // Both address steps write to the shared "propertyAddress" key
+    const answerKey = isAddressStep ? "propertyAddress" : step.id;
+
+    // If address step has yearBuilt, auto-derive propertyAge + purchaseYear
+    const isAddressUpdate = (step.id === "propertyAddressEntry" || step.id === "propertyAddressConfirm" || step.id === "propertyAddress");
+    if (isAddressUpdate && value && value.propertyDetails?.yearBuilt) {
       const yb = value.propertyDetails.yearBuilt;
       let derivedAge;
       if (yb >= 2020) derivedAge = "2020s";
@@ -70,17 +144,16 @@ export default function QuizShell() {
       else if (yb >= 2000) derivedAge = "2000s";
       else derivedAge = "pre-2000";
 
-      // Also auto-detect purchaseYear from lastSoldDate if available
       const lastSoldDate = value.propertyDetails?.lastSoldDate;
       const detectedYear = derivePurchaseYear(lastSoldDate);
       setAnswers((prev) => ({
         ...prev,
-        [step.id]: value,
+        [answerKey]: value,
         propertyAge: derivedAge,
         ...(detectedYear && !prev.purchaseYear ? { purchaseYear: detectedYear, _purchaseYearAutoDetected: lastSoldDate } : {}),
       }));
     } else {
-      setAnswers((prev) => ({ ...prev, [step.id]: value }));
+      setAnswers((prev) => ({ ...prev, [answerKey]: value }));
     }
 
     // Check for disqualification
@@ -113,11 +186,9 @@ export default function QuizShell() {
     setTimeout(() => {
       // Rebuild activeSteps with the new answer to account for conditional changes
       const updatedAnswers = { ...answers, [step.id]: value };
+      const updatedIsAirbnbUser = updatedAnswers.propertyUse === "str" || updatedAnswers.propertyUse === "mtr";
       const updatedActiveSteps = QUIZ_STEPS.filter((s) => {
-        if (s.id === "airbnbUrl") {
-          const use = updatedAnswers.propertyUse;
-          return use === "str" || use === "mtr";
-        }
+        if (s.id === "airbnbUrl" || s.id === "airbnbVerify") return updatedIsAirbnbUser;
         return true;
       });
 
@@ -134,9 +205,10 @@ export default function QuizShell() {
   }
 
   const navigateToResults = useCallback(
-    (finalAnswers) => {
+    (finalAnswers, finalAirbnbJob) => {
       const params = new URLSearchParams();
       const all = finalAnswers || answers;
+      const jobState = finalAirbnbJob || airbnbJob;
 
       // Helper to serialize Airbnb enrichment data into URL params
       function serializeAirbnb(ab) {
@@ -170,12 +242,15 @@ export default function QuizShell() {
         }
       }
 
+      // Include Airbnb listing from background job if available
+      if (jobState.listing) serializeAirbnb(jobState.listing);
+
       Object.entries(all).forEach(([key, val]) => {
         // Skip internal auto-detection flag
         if (key === "_purchaseYearAutoDetected") return;
 
         // Address type: flatten into individual params
-        if (key === "propertyAddress" && val && typeof val === "object" && val.fullAddress) {
+        if (key === "propertyAddress" && val && typeof val === "object" && (val.fullAddress || val.address)) {
           params.set("address", val.fullAddress);
           params.set("city", val.city || "");
           params.set("state", val.state || "");
@@ -200,13 +275,10 @@ export default function QuizShell() {
           return;
         }
 
-        // Airbnb URL step: extract listing data from the answer object
-        if (key === "airbnbUrl" && val && typeof val === "object" && val.listing) {
-          serializeAirbnb(val.listing);
-          return;
-        }
-        // Skip airbnbUrl if it's just a string (user skipped or entered URL without fetching)
+        // Airbnb URL step: skip — listing data comes from airbnbJob state
         if (key === "airbnbUrl") return;
+        // airbnbVerify: skip (already serialized from airbnbJob above)
+        if (key === "airbnbVerify") return;
 
         if (Array.isArray(val)) {
           params.set(key, val.join(","));
@@ -344,6 +416,7 @@ export default function QuizShell() {
             showTooltip={showTooltip}
             onToggleTooltip={() => setShowTooltip(!showTooltip)}
             answers={answers}
+            airbnbJob={airbnbJob}
           />
 
           {/* Navigation */}
@@ -371,7 +444,7 @@ export default function QuizShell() {
                 </span>
               </div>
 
-              {step.type === "multi" || step.type === "currency" || step.type === "address" || step.type === "currency-option" || step.type === "tax-bracket" || step.type === "airbnb-url" || (step.type === "option" && currentAnswer) ? (
+              {step.type === "multi" || step.type === "currency" || step.type === "address" || step.type === "address-confirm" || step.type === "airbnb-verify" || step.type === "currency-option" || step.type === "tax-bracket" || step.type === "airbnb-url" || (step.type === "option" && currentAnswer) ? (
                 <button
                   className="btn btn-primary quiz-nav-next"
                   onClick={handleNext}

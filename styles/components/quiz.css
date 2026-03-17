@@ -988,6 +988,55 @@
   padding: 0 var(--space-3) var(--space-3);
 }
 
+/* Background lookup notice (shown on airbnb-url step after URL submitted) */
+.quiz-airbnb-background-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-2);
+  padding: 10px 14px;
+  background: var(--turq-bg);
+  border: 1px solid var(--turq-light);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--turq-mid);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Smaller spinner for inline notices */
+.quiz-airbnb-spinner-sm {
+  color: var(--turq);
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Skip / no-listing notice (airbnb-verify step) */
+.quiz-airbnb-skip-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: var(--space-4) var(--space-3);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-2);
+}
+
+.quiz-airbnb-skip-notice p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-mid);
+  line-height: 1.5;
+}
+
+.quiz-airbnb-skip-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
 /* ─── Property Confirmation Card ─── */
 .quiz-property-card {
   background: #fff;
