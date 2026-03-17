@@ -9,5 +9,5 @@ Sentry.init({
   // Capture all server errors — these are the ones you most need to see
   tracesSampleRate: 0.1,
 
-  enabled: process.env.NODE_ENV === "production",
+  enabled: !!process.env.SENTRY_DSN,
 });

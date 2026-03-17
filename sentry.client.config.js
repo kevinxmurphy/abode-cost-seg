@@ -10,8 +10,8 @@ Sentry.init({
   // Increase to 1.0 if you need full traces during debugging
   tracesSampleRate: 0.1,
 
-  // Only send errors in production — keeps dev noise out of your dashboard
-  enabled: process.env.NODE_ENV === "production",
+  // Disable only if DSN is not set (prevents silent no-ops)
+  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   // Show a dialog asking the user for feedback when an error occurs
   // (optional — remove if you don't want this)
