@@ -1162,34 +1162,71 @@ function AirbnbUrlInput({ value, onChange, onAutoAdvance, placeholder, propertyA
     }
     setError("");
     setLoading(true);
+
     try {
       // Check client cache first
       const cacheKey = buildAirbnbCacheKey(roomId);
       const cached = clientCacheGet(cacheKey);
-
-      let listing;
       if (cached) {
-        listing = cached;
-      } else {
-        const res = await fetch("/api/airbnb/lookup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: urlToFetch }),
-        });
-        const data = await res.json();
+        setListingData(cached);
+        onChange({ url: urlToFetch, listing: cached });
+        return;
+      }
 
-        if (data.fallback || !data.listing) {
-          setError(data.message || "Could not fetch listing. You can skip this step and continue.");
+      // Step 1 — fire the job, get runId immediately
+      const startRes = await fetch("/api/airbnb/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlToFetch }),
+      });
+      const startData = await startRes.json();
+
+      // Already cached server-side
+      if (startData.cached && startData.listing) {
+        const listing = startData.listing;
+        clientCacheSet(cacheKey, listing);
+        sessionSave("lastAirbnbListing", listing);
+        setListingData(listing);
+        onChange({ url: urlToFetch, listing });
+        return;
+      }
+
+      if (startData.fallback || !startData.runId) {
+        setError(startData.message || "Could not fetch listing. You can skip this step and continue.");
+        return;
+      }
+
+      // Step 2 — poll every 3s until done (max ~90s)
+      const { runId, listingUrl } = startData;
+      const pollUrl = `/api/airbnb/poll?runId=${encodeURIComponent(runId)}&roomId=${encodeURIComponent(roomId)}&listingUrl=${encodeURIComponent(listingUrl || urlToFetch)}`;
+      const maxAttempts = 30; // 30 × 3s = 90s max
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise((r) => setTimeout(r, 3000));
+
+        const pollRes = await fetch(pollUrl);
+        const pollData = await pollRes.json();
+
+        if (pollData.status === "done" && pollData.listing) {
+          const listing = pollData.listing;
+          clientCacheSet(cacheKey, listing);
+          sessionSave("lastAirbnbListing", listing);
+          setListingData(listing);
+          onChange({ url: urlToFetch, listing });
           return;
         }
 
-        listing = data.listing;
-        clientCacheSet(cacheKey, listing);
-        sessionSave("lastAirbnbListing", listing);
+        if (pollData.status === "failed") {
+          setError(pollData.message || "Could not fetch listing. You can skip this step and continue.");
+          return;
+        }
+
+        // status === "running" — keep polling
       }
 
-      setListingData(listing);
-      onChange({ url: urlToFetch, listing });
+      // Timed out on client side
+      setError("Airbnb lookup is taking longer than expected. You can skip this step and continue.");
+
     } catch {
       setError("Could not fetch listing. Please check the URL and try again, or skip this step.");
     } finally {
