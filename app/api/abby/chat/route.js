@@ -1,7 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ABBY_SYSTEM_PROMPT, ABBY_KNOWLEDGE_BASE } from '@/lib/abbyKnowledge';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Lazy-initialized to avoid crashing the build when ANTHROPIC_API_KEY is not set.
+let _client = null;
+function getClient() {
+  if (!_client) {
+    _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return _client;
+}
 
 const SYSTEM = `${ABBY_SYSTEM_PROMPT}\n\n---\nKNOWLEDGE BASE:\n${ABBY_KNOWLEDGE_BASE}`;
 
@@ -66,7 +73,7 @@ export async function POST(request) {
         content: String(m.content).slice(0, 800),
       }));
 
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
       system: SYSTEM,
