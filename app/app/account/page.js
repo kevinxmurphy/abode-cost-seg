@@ -1,100 +1,81 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Receipt, CheckCircle2, Clock } from "lucide-react";
+import { Loader2, Check, AlertCircle } from "lucide-react";
 import { STUDY_PRICE_DISPLAY } from "@/lib/pricing";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric", month: "short", day: "numeric",
-  });
+// ─── Small status banner ────────────────────────────────
+function Banner({ type, message }) {
+  if (!message) return null;
+  const isError = type === "error";
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "10px 14px",
+        borderRadius: 8,
+        fontSize: 13,
+        marginBottom: "var(--space-3)",
+        background: isError ? "var(--adobe-bg, #fef2f2)" : "var(--turq-bg)",
+        color: isError ? "var(--adobe, #dc2626)" : "var(--turq)",
+        border: `1px solid ${isError ? "var(--adobe-border, #fecaca)" : "var(--turq-light)"}`,
+      }}
+    >
+      {isError ? <AlertCircle size={14} /> : <Check size={14} />}
+      {message}
+    </div>
+  );
 }
 
-function fmtCents(cents) {
-  if (!cents) return STUDY_PRICE_DISPLAY; // fallback
-  return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 });
-}
+// ─── Profile section ────────────────────────────────────
+function ProfileSection({ user, onSaved }) {
+  const [name, setName] = useState(user.name || "");
+  const [email, setEmail] = useState(user.email || "");
+  const [phone, setPhone] = useState(user.phone || "");
+  const [loading, setLoading] = useState(false);
+  const [banner, setBanner] = useState(null);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Page
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export default function AccountPage() {
-  const [user,         setUser]         = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [transactions, setTransactions] = useState(null); // null = not loaded
-  const [saving,       setSaving]       = useState(false);
-  const [saved,        setSaved]        = useState(false);
-  const [name,         setName]         = useState("");
-  const [email,        setEmail]        = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (!res.ok || cancelled) return;
-        const { user: u } = await res.json();
-        if (!u || cancelled) return;
-        setUser(u);
-        setName(u.name || "");
-        setEmail(u.email || "");
-
-        // Load billing
-        const billingRes = await fetch("/api/billing");
-        if (!cancelled && billingRes.ok) {
-          const { transactions: t } = await billingRes.json();
-          setTransactions(t || []);
-        }
-      } catch { /* silent */ } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => { cancelled = true; };
-  }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
+  async function handleSave(e) {
+    e.preventDefault();
+    setBanner(null);
+    setLoading(true);
     try {
-      // PHASE 2: Real profile update via /api/user/profile
-      await new Promise((r) => setTimeout(r, 600));
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch { /* silent */ } finally {
-      setSaving(false);
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBanner({ type: "success", message: "Profile updated." });
+        onSaved(data.user);
+      } else {
+        setBanner({ type: "error", message: data.error || "Update failed." });
+      }
+    } catch {
+      setBanner({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setLoading(false);
     }
-  };
-
-  if (loading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--dust)", marginTop: "var(--space-8)" }}>
-        <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: 14 }}>Loading account…</span>
-      </div>
-    );
   }
 
   return (
-    <div style={{ maxWidth: 520 }}>
-      <div className="eyebrow" style={{ marginBottom: 4 }}>My Account</div>
-      <h1 className="h2-section" style={{ marginBottom: "var(--space-5)" }}>Settings</h1>
+    <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+      <div className="ui-label" style={{ marginBottom: "var(--space-3)" }}>Profile</div>
 
-      {/* ── Profile ── */}
-      <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
-        <div className="ui-label" style={{ marginBottom: "var(--space-3)" }}>Profile</div>
+      <Banner type={banner?.type} message={banner?.message} />
 
+      <form onSubmit={handleSave}>
         <div className="field">
-          <label className="label">Name</label>
+          <label className="label">Full Name</label>
           <input
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            required
+            disabled={loading}
           />
         </div>
 
@@ -105,120 +86,253 @@ export default function AccountPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="field">
+          <label className="label">Phone <span style={{ color: "var(--dust)", fontWeight: 400 }}>(optional)</span></label>
+          <input
+            className="input"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="(555) 000-0000"
+            disabled={loading}
           />
         </div>
 
         <button
-          className="btn btn-primary btn-sm"
-          onClick={handleSave}
-          disabled={saving}
-          style={{ display: "flex", alignItems: "center", gap: 6 }}
+          type="submit"
+          className="btn btn-primary"
+          disabled={loading}
         >
-          {saving
-            ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Saving…</>
-            : saved
-              ? <><CheckCircle2 size={14} /> Saved</>
-              : "Save Changes"
-          }
+          {loading ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Loader2 size={14} className="quiz-airbnb-spinner" />
+              Saving...
+            </span>
+          ) : (
+            "Save Changes"
+          )}
         </button>
-      </div>
+      </form>
+    </div>
+  );
+}
 
-      {/* ── Plan ── */}
-      <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
-        <div className="ui-label" style={{ marginBottom: "var(--space-2)" }}>Plan</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
-          Pay-per-study
+// ─── Change password section (email auth users only) ────
+function ChangePasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [banner, setBanner] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setBanner(null);
+
+    if (newPassword !== confirmPassword) {
+      setBanner({ type: "error", message: "New passwords don't match." });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setBanner({ type: "error", message: "Password must be at least 8 characters." });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/user/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBanner({ type: "success", message: "Password updated successfully." });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setBanner({ type: "error", message: data.error || "Update failed." });
+      }
+    } catch {
+      setBanner({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+      <div className="ui-label" style={{ marginBottom: "var(--space-3)" }}>Password</div>
+
+      <Banner type={banner?.type} message={banner?.message} />
+
+      <form onSubmit={handleSubmit}>
+        <div className="field">
+          <label className="label">Current Password</label>
+          <input
+            className="input"
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            disabled={loading}
+          />
         </div>
-        <p style={{ fontSize: 13, color: "var(--dust)", margin: "0 0 var(--space-2)", lineHeight: 1.5 }}>
-          {STUDY_PRICE_DISPLAY} per property · No subscription · Cancel anytime within 90 days.
-        </p>
-        <a
-          href="mailto:hello@abodecostseg.com?subject=Refund request"
-          style={{ fontSize: 13, color: "var(--turq)", textDecoration: "none" }}
+        <div className="field">
+          <label className="label">New Password</label>
+          <input
+            className="input"
+            type="password"
+            placeholder="8+ characters"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={8}
+            autoComplete="new-password"
+            disabled={loading}
+          />
+        </div>
+        <div className="field">
+          <label className="label">Confirm New Password</label>
+          <input
+            className="input"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+            disabled={loading}
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={loading}
         >
-          Refund request or billing question →
-        </a>
-      </div>
+          {loading ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Loader2 size={14} className="quiz-airbnb-spinner" />
+              Updating...
+            </span>
+          ) : (
+            "Update Password"
+          )}
+        </button>
+      </form>
+    </div>
+  );
+}
 
-      {/* ── Order History ── */}
-      <div className="card" style={{ padding: "var(--space-4)" }}>
-        <div className="ui-label" style={{ marginBottom: "var(--space-3)" }}>Order History</div>
+// ─── Billing / plan section ─────────────────────────────
+function BillingSection({ user }) {
+  const [portalLoading, setPortalLoading] = useState(false);
 
-        {transactions === null && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--dust)", fontSize: 13 }}>
-            <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-            Loading…
-          </div>
-        )}
+  return (
+    <div className="card" style={{ padding: "var(--space-4)" }}>
+      <div className="ui-label" style={{ marginBottom: "var(--space-3)" }}>Plan &amp; Billing</div>
 
-        {transactions !== null && transactions.length === 0 && (
-          <p style={{ fontSize: 13, color: "var(--dust)", margin: 0 }}>
-            No orders yet.{" "}
-            <a href="/quiz" style={{ color: "var(--turq)", textDecoration: "none" }}>
-              Start your first estimate →
-            </a>
-          </p>
-        )}
-
-        {transactions !== null && transactions.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {transactions.map((tx, i) => (
-              <div
-                key={tx.id}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "var(--space-2)",
-                  padding: "12px 0",
-                  borderBottom: i < transactions.length - 1 ? "1px solid var(--border)" : "none",
-                }}
-              >
-                {/* Icon */}
-                <div style={{
-                  width: 32, height: 32, borderRadius: "var(--radius-sm)",
-                  background: tx.status === "complete" ? "var(--turq-bg)" : "var(--surface)",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  {tx.status === "complete"
-                    ? <Receipt size={14} style={{ color: "var(--turq)" }} />
-                    : <Clock size={14} style={{ color: "var(--dust)" }} />
-                  }
-                </div>
-
-                {/* Details */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {tx.address}
-                  </div>
-                  <div className="mono" style={{ fontSize: 11, color: "var(--dust)", marginTop: 2 }}>
-                    {tx.study_type === "catch-up" ? "Catch-Up Study" : "Cost Seg Study"}
-                    {tx.paid_at ? ` · ${formatDate(tx.paid_at)}` : ""}
-                  </div>
-                </div>
-
-                {/* Amount */}
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>
-                    {fmtCents(tx.amount)}
-                  </div>
-                  <div
-                    className="mono"
-                    style={{ fontSize: 10, color: tx.status === "complete" ? "var(--turq)" : "var(--dust)", marginTop: 2 }}
-                  >
-                    {tx.status === "complete" ? "COMPLETE" : tx.status?.toUpperCase()}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <p className="mono" style={{ fontSize: 10, color: "var(--dust)", marginTop: "var(--space-2)", marginBottom: 0, lineHeight: 1.5 }}>
-          Stripe receipts are sent to your email at time of purchase.
-          For a copy, contact{" "}
-          <a href="mailto:hello@abodecostseg.com" style={{ color: "var(--turq)" }}>hello@abodecostseg.com</a>.
+      <div style={{ marginBottom: "var(--space-3)" }}>
+        <div style={{ fontSize: "15px", fontWeight: 500, color: "var(--ink)", marginBottom: 4 }}>
+          Standard — Pay Per Study
+        </div>
+        <p style={{ fontSize: "14px", color: "var(--dust)" }}>
+          {STUDY_PRICE_DISPLAY} per property. No subscription required.
         </p>
       </div>
+
+      {user?.stripe_customer_id ? (
+        <button
+          className="btn btn-outline"
+          disabled={portalLoading}
+          onClick={async () => {
+            setPortalLoading(true);
+            try {
+              const res = await fetch("/api/user/billing-portal", { method: "POST" });
+              const data = await res.json();
+              if (data.url) {
+                window.location.href = data.url;
+              }
+            } catch {
+              // silent — portal is best-effort
+            } finally {
+              setPortalLoading(false);
+            }
+          }}
+          style={{ fontSize: 13 }}
+        >
+          {portalLoading ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Loader2 size={13} className="quiz-airbnb-spinner" />
+              Loading...
+            </span>
+          ) : (
+            "Manage Billing"
+          )}
+        </button>
+      ) : null}
+
+      <p className="mono" style={{ fontSize: "10px", color: "var(--dust)", marginTop: "var(--space-3)" }}>
+        Questions? Contact{" "}
+        <a href="mailto:support@abodecostseg.com" style={{ color: "var(--turq)" }}>
+          support@abodecostseg.com
+        </a>
+      </p>
+    </div>
+  );
+}
+
+// ─── Main page ──────────────────────────────────────────
+export default function AccountPage() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.id) setUser(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "var(--space-5) 0", color: "var(--dust)" }}>
+        <Loader2 size={18} className="quiz-airbnb-spinner" />
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ maxWidth: 480 }}>
+        <div className="eyebrow" style={{ marginBottom: 4 }}>Account</div>
+        <h1 className="h2-section" style={{ marginBottom: "var(--space-5)" }}>Account Settings</h1>
+        <p style={{ color: "var(--dust)", fontSize: 14 }}>Unable to load profile. Please refresh the page.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "480px" }}>
+      <div className="eyebrow" style={{ marginBottom: "4px" }}>Account</div>
+      <h1 className="h2-section" style={{ marginBottom: "var(--space-5)" }}>Account Settings</h1>
+
+      <ProfileSection user={user} onSaved={setUser} />
+
+      {user.auth_provider === "email" && <ChangePasswordSection />}
+
+      <BillingSection user={user} />
     </div>
   );
 }
