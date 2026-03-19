@@ -8,6 +8,10 @@ import { Loader2 } from "lucide-react";
 export default function SignupPage() {
   const router = useRouter();
   const [agreed, setAgreed] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -16,11 +20,29 @@ export default function SignupPage() {
 
   useEffect(() => setMounted(true), []);
 
-  function handleSubmit(e) {
+  // ─── Email / Password registration ───
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!agreed) return;
-    // STUB: Email/password auth — always redirects to dashboard
-    router.push("/app/dashboard");
+    setAuthError("");
+    setEmailLoading(true);
+    try {
+      const res = await fetch("/api/auth/email/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        router.push("/app/dashboard");
+      } else {
+        setAuthError(data.error || "Registration failed. Please try again.");
+      }
+    } catch {
+      setAuthError("Network error. Please try again.");
+    } finally {
+      setEmailLoading(false);
+    }
   }
 
   // ─── Google Sign-In callback ───
@@ -101,6 +123,8 @@ export default function SignupPage() {
     }
   }, [handleGoogleCredential]);
 
+  const isLoading = authLoading || emailLoading;
+
   return (
     <div
       style={{
@@ -136,7 +160,7 @@ export default function SignupPage() {
             Create your account
           </h1>
 
-          {/* Terms & Privacy consent — shown above Google button */}
+          {/* Terms & Privacy consent */}
           <div
             style={{
               display: "flex",
@@ -189,7 +213,7 @@ export default function SignupPage() {
             </label>
           </div>
 
-          {/* Google Sign-In — Real GIS button */}
+          {/* Google Sign-In */}
           <div
             ref={googleBtnRef}
             style={{
@@ -201,34 +225,34 @@ export default function SignupPage() {
             }}
           />
 
-          {/* Fallback Google button if GIS hasn't rendered */}
+          {/* Fallback Google button */}
           {mounted && !authLoading && !gisRendered && (
-              <button
-                className="btn btn-outline"
-                style={{
-                  width: "100%",
-                  marginBottom: "var(--space-2)",
-                  opacity: agreed ? 1 : 0.5,
-                  cursor: agreed ? "pointer" : "not-allowed",
-                }}
-                disabled={!agreed}
-                onClick={() => {
-                  if (!agreed) {
-                    setAuthError("Please agree to the Terms of Service first.");
-                    return;
-                  }
-                  if (window.google?.accounts?.id) {
-                    window.google.accounts.id.prompt();
-                  } else {
-                    setAuthError(
-                      "Google Sign-In is loading. Please try again in a moment."
-                    );
-                  }
-                }}
-              >
-                Continue with Google
-              </button>
-            )}
+            <button
+              className="btn btn-outline"
+              style={{
+                width: "100%",
+                marginBottom: "var(--space-2)",
+                opacity: agreed ? 1 : 0.5,
+                cursor: agreed ? "pointer" : "not-allowed",
+              }}
+              disabled={!agreed}
+              onClick={() => {
+                if (!agreed) {
+                  setAuthError("Please agree to the Terms of Service first.");
+                  return;
+                }
+                if (window.google?.accounts?.id) {
+                  window.google.accounts.id.prompt();
+                } else {
+                  setAuthError(
+                    "Google Sign-In is loading. Please try again in a moment."
+                  );
+                }
+              }}
+            >
+              Continue with Google
+            </button>
+          )}
 
           {authLoading && (
             <div
@@ -274,7 +298,15 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit}>
             <div className="field">
               <label className="label">Full Name</label>
-              <input className="input" placeholder="Kevin" required />
+              <input
+                className="input"
+                placeholder="Kevin"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                disabled={isLoading}
+              />
             </div>
             <div className="field">
               <label className="label">Email</label>
@@ -282,7 +314,11 @@ export default function SignupPage() {
                 className="input"
                 type="email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
+                disabled={isLoading}
               />
             </div>
             <div className="field">
@@ -291,7 +327,12 @@ export default function SignupPage() {
                 className="input"
                 type="password"
                 placeholder="8+ characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
+                autoComplete="new-password"
+                disabled={isLoading}
               />
             </div>
 
@@ -303,9 +344,16 @@ export default function SignupPage() {
                 opacity: agreed ? 1 : 0.5,
                 cursor: agreed ? "pointer" : "not-allowed",
               }}
-              disabled={!agreed}
+              disabled={!agreed || isLoading}
             >
-              Create Account
+              {emailLoading ? (
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <Loader2 size={14} className="quiz-airbnb-spinner" />
+                  Creating account...
+                </span>
+              ) : (
+                "Create Account"
+              )}
             </button>
           </form>
 

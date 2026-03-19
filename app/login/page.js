@@ -7,6 +7,9 @@ import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -15,10 +18,28 @@ export default function LoginPage() {
 
   useEffect(() => setMounted(true), []);
 
-  function handleSubmit(e) {
+  // ─── Email / Password login ───
+  async function handleSubmit(e) {
     e.preventDefault();
-    // STUB: Email/password auth — always redirects to dashboard
-    router.push("/app/dashboard");
+    setAuthError("");
+    setEmailLoading(true);
+    try {
+      const res = await fetch("/api/auth/email/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        router.push("/app/dashboard");
+      } else {
+        setAuthError(data.error || "Sign-in failed. Please try again.");
+      }
+    } catch {
+      setAuthError("Network error. Please try again.");
+    } finally {
+      setEmailLoading(false);
+    }
   }
 
   // ─── Google Sign-In callback ───
@@ -95,6 +116,8 @@ export default function LoginPage() {
     }
   }, [handleGoogleCredential]);
 
+  const isLoading = authLoading || emailLoading;
+
   return (
     <div
       style={{
@@ -138,22 +161,22 @@ export default function LoginPage() {
 
           {/* Fallback Google button if GIS hasn't rendered */}
           {mounted && !authLoading && !gisRendered && (
-              <button
-                className="btn btn-outline"
-                style={{ width: "100%", marginBottom: "var(--space-2)" }}
-                onClick={() => {
-                  if (window.google?.accounts?.id) {
-                    window.google.accounts.id.prompt();
-                  } else {
-                    setAuthError(
-                      "Google Sign-In is loading. Please try again in a moment."
-                    );
-                  }
-                }}
-              >
-                Sign in with Google
-              </button>
-            )}
+            <button
+              className="btn btn-outline"
+              style={{ width: "100%", marginBottom: "var(--space-2)" }}
+              onClick={() => {
+                if (window.google?.accounts?.id) {
+                  window.google.accounts.id.prompt();
+                } else {
+                  setAuthError(
+                    "Google Sign-In is loading. Please try again in a moment."
+                  );
+                }
+              }}
+            >
+              Sign in with Google
+            </button>
+          )}
 
           {authLoading && (
             <div
@@ -203,6 +226,11 @@ export default function LoginPage() {
                 className="input"
                 type="email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={isLoading}
               />
             </div>
             <div className="field">
@@ -211,14 +239,27 @@ export default function LoginPage() {
                 className="input"
                 type="password"
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={isLoading}
               />
             </div>
             <button
               type="submit"
               className="btn btn-primary"
               style={{ width: "100%" }}
+              disabled={isLoading}
             >
-              Log in
+              {emailLoading ? (
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <Loader2 size={14} className="quiz-airbnb-spinner" />
+                  Signing in...
+                </span>
+              ) : (
+                "Log in"
+              )}
             </button>
           </form>
 

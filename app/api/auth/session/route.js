@@ -23,6 +23,8 @@ export async function GET(request) {
         email: session.email,
         name: session.name,
         picture: session.picture,
+        userId: session.userId,
+        authProvider: session.authProvider,
       },
     });
   } catch (error) {
