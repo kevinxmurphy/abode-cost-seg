@@ -1,6 +1,6 @@
 # ABODE — Project Tracker
 
-> **Last updated:** 2026-03-16 (evening)
+> **Last updated:** 2026-03-17
 > **Product:** AI-powered cost segregation tool for STR investors
 > **Stack:** Next.js 14 (App Router), Supabase, Google OAuth, Stripe
 > **Stripe Product:** `prod_UA3MUq9l0I6QBL` / Price: `price_1TBjGFCym8zeLTTQ0Dkvi1Aa` ($481 one-time)
@@ -294,7 +294,7 @@
 ### WS-16: Monitoring, Alerting & Operations — 🔲 PRE-LAUNCH
 | Task | Status | Notes |
 |------|--------|-------|
-| Error monitoring | 🔲 Dev | Sentry — install `@sentry/nextjs`, configure DSN, alert on new errors |
+| Error monitoring | 🔄 In Progress | Sentry — `@sentry/nextjs` installed; configs fixed to enable in all envs when DSN is set; **Kevin: add `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` to `.env.local` and Vercel env vars** |
 | Uptime monitoring | 🔲 **Kevin** | BetterUptime or UptimeRobot (free) — ping every 5 min, email/SMS on downtime |
 | Stripe payment alerts | 🔲 **Kevin** | Enable Stripe email notifications for successful payments + failed charges |
 | Supabase alerts | 🔲 **Kevin** | Enable Supabase email alerts for DB approaching limits |
@@ -387,7 +387,7 @@
 | 🟡 Pre-launch | Create Google Tag Manager account + container |
 | 🟡 Pre-launch | Set up Meta Business account + create Pixel |
 | 🟡 Pre-launch | Verify domain in Google Search Console (DNS TXT via GoDaddy) |
-| 🟡 Pre-launch | Set up Sentry account — get DSN |
+| 🔴 Now | **Set up Sentry account → get DSN → add `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` to `.env.local` and Vercel env vars** (code is ready, just needs the DSN) |
 | 🟡 Pre-launch | Set up UptimeRobot (free) for uptime monitoring |
 | 🟡 Pre-launch | Provide logo files: SVG + PNG variants |
 | 🟡 Pre-launch | Confirm brand colors / font weights are final |
@@ -487,6 +487,13 @@ JWT_SECRET=...                     # Random 256-bit secret for HS256 session sig
   2. Add Stripe env vars to `.env.local` to unblock payment sprint
   3. Confirm `abodecostseg.com` is purchased in GoDaddy
 - **Next dev session:** Wire Stripe checkout → payment → study unlock; `lib/config.js` with `REFUND_WINDOW_DAYS`; JWT session signing
+
+### Session 2026-03-17 — Sentry Debug
+- Diagnosed why no events were appearing: all three Sentry configs had `enabled: NODE_ENV === "production"`, which silently disabled Sentry in dev and staging
+- Fixed: changed `enabled` to `!!process.env.SENTRY_DSN` (client uses `NEXT_PUBLIC_SENTRY_DSN`) — Sentry now active in any environment where the DSN is set
+- **Kevin action needed:** Add `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` to `.env.local` (local dev) and to Vercel environment variables (production). Get DSN from Sentry dashboard → your project → Settings → Client Keys.
+
+---
 
 ### Session 2026-03-16 (Late PM — Stripe Setup)
 - Stripe test mode enabled in dashboard
