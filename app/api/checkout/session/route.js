@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { stripe, PRICE_ID } from "@/lib/stripe";
 import { getSession } from "@/lib/auth";
+import { getUserById } from "@/lib/db/users";
 import log from "@/lib/logger";
 
 export async function POST(request) {
@@ -14,6 +15,13 @@ export async function POST(request) {
     const session = await getSession(request);
     const userId = session?.userId || null;
     const userEmail = session?.email || null;
+
+    // If user exists, check for an existing Stripe customer ID
+    let stripeCustomerId = null;
+    if (userId) {
+      const dbUser = await getUserById(userId);
+      stripeCustomerId = dbUser?.stripe_customer_id || null;
+    }
 
     // Parse request body for property context
     const body = await request.json().catch(() => ({}));
@@ -43,8 +51,12 @@ export async function POST(request) {
         propertyId: propertyId || "",
         propertyAddress: propertyAddress || "",
       },
-      // Pre-fill email if user is logged in
-      ...(userEmail && { customer_email: userEmail }),
+      // Re-use existing Stripe customer or pre-fill email for new ones
+      ...(stripeCustomerId
+        ? { customer: stripeCustomerId }
+        : userEmail
+          ? { customer_email: userEmail }
+          : {}),
     };
 
     const checkoutSession = await stripe.checkout.sessions.create(

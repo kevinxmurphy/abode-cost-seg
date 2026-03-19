@@ -7,6 +7,18 @@
 - [ ] `NEXT_PUBLIC_APP_URL` — Production URL (defaults to `https://www.abodecostseg.com`)
 - [ ] Drop OG image at `public/og-image.png` (1200x630 PNG)
 
+## Sentry Source Maps (env vars for Vercel build)
+
+- [ ] `SENTRY_AUTH_TOKEN` — Sentry auth token (already configured in next.config.mjs)
+- [ ] `SENTRY_ORG` — Sentry organization slug
+- [ ] `SENTRY_PROJECT` — Sentry project slug
+
+## Stripe Customer Portal
+
+- [ ] Configure Customer Portal in Stripe Dashboard (Settings > Customer Portal)
+  - Enable receipt/invoice access, payment method management
+  - Billing portal endpoint is live at `/api/user/billing-portal`
+
 ## DB Migration Required
 
 - [ ] Run `supabase/migrations/002_add_utm_columns.sql` in Supabase SQL Editor

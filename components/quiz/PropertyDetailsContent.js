@@ -146,7 +146,7 @@ export default function PropertyDetailsContent() {
   if (tier1Data.assessedLand > 0 && tier1Data.assessedImprovement > 0) {
     const total = tier1Data.assessedLand + tier1Data.assessedImprovement;
     landRatio = tier1Data.assessedLand / total;
-    landRatio = Math.max(0.08, Math.min(landRatio, 0.45));
+    landRatio = Math.max(0.05, Math.min(landRatio, 0.80));
   }
 
   const depreciableBasis = tier1Data.purchasePrice * (1 - landRatio);

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getServerClient } from "@/lib/supabase";
 import { sendPurchaseConfirmation } from "@/lib/email";
+import { setStripeCustomerId } from "@/lib/db/users";
 import log from "@/lib/logger";
 
 // Disable Next.js body parsing — Stripe needs the raw body for signature verification
@@ -86,6 +87,12 @@ export async function POST(request) {
           // Table may not exist yet — that's ok, log and continue
           log.warn("[webhook/stripe] Purchases insert failed (table may not exist):", insertErr.message);
         }
+      }
+
+      // Persist Stripe customer ID on the user for billing portal access
+      const stripeCustomerId = session.customer;
+      if (stripeCustomerId && userId) {
+        await setStripeCustomerId(userId, stripeCustomerId);
       }
 
       // Send purchase confirmation email
