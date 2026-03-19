@@ -5,13 +5,14 @@
 import { NextResponse } from "next/server";
 import { hashPassword, createSession, buildSessionCookie } from "@/lib/auth";
 import { createEmailUser, getUserByEmail } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 const MIN_PASSWORD_LEN = 8;
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, name, password } = body;
+    const { email, name, password, utmSource, utmMedium, utmCampaign } = body;
 
     // Validate inputs
     if (!email || !name || !password) {
@@ -46,6 +47,9 @@ export async function POST(request) {
       email: trimmedEmail,
       name: trimmedName,
       passwordHash,
+      utmSource,
+      utmMedium,
+      utmCampaign,
     });
 
     if (!user) {
@@ -79,7 +83,7 @@ export async function POST(request) {
     response.headers.set("Set-Cookie", cookieHeader);
     return response;
   } catch (error) {
-    console.error("[auth/email/register] Error:", error.message);
+    log.error("[auth/email/register] Error:", error.message);
     return NextResponse.json(
       { success: false, error: "Registration failed. Please try again." },
       { status: 500 }

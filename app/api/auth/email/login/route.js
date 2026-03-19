@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { verifyPassword, createSession, buildSessionCookie } from "@/lib/auth";
 import { getUserByEmail } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   try {
@@ -73,7 +74,7 @@ export async function POST(request) {
     response.headers.set("Set-Cookie", cookieHeader);
     return response;
   } catch (error) {
-    console.error("[auth/email/login] Error:", error.message);
+    log.error("[auth/email/login] Error:", error.message);
     return NextResponse.json(
       { success: false, error: "Sign-in failed. Please try again." },
       { status: 500 }

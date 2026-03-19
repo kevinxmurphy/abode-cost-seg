@@ -12,13 +12,13 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { email, source, propertyAddress, quizData } = body;
+  const { email, source, propertyAddress, quizData, utmSource, utmMedium, utmCampaign } = body;
 
   if (!email || !email.includes("@")) {
     return NextResponse.json({ error: "Valid email required" }, { status: 400 });
   }
 
-  await captureEmail({ email, source, propertyAddress, quizData });
+  await captureEmail({ email, source, propertyAddress, quizData, utmSource, utmMedium, utmCampaign });
 
   // Always return success — don't leak DB errors to client
   return NextResponse.json({ success: true });

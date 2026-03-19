@@ -1,6 +1,6 @@
 import { articles } from "@/lib/blogData";
 
-const BASE_URL = "https://www.abodecostseg.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.abodecostseg.com";
 
 export default function sitemap() {
   const now = new Date().toISOString();

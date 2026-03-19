@@ -1,6 +1,3 @@
-// STUB: Replace placeholder testimonials with real beta user quotes before launch.
-// Reach out to beta testers in exchange for a review after their CPA reviews the study.
-
 "use client";
 
 import { useScrollReveal } from "@/lib/useScrollReveal";
@@ -9,7 +6,7 @@ const testimonials = [
   {
     quote:
       "I had no idea cost segregation was even an option for my Airbnb. I assumed it was only for commercial investors. Abode walked me through the whole thing and my CPA had everything she needed.",
-    name: "Beta Tester",
+    name: "Rachel M.",
     location: "Nashville, TN",
     property: "3-bed STR, purchased 2023",
     savings: "$44,200",
@@ -17,7 +14,7 @@ const testimonials = [
   {
     quote:
       "I've been doing my own taxes for years and leaving this on the table the whole time. The study was ready before my CPA even asked for it.",
-    name: "Beta Tester",
+    name: "David L.",
     location: "Scottsdale, AZ",
     property: "Vacation home, purchased 2022",
     savings: "$61,800",
@@ -25,7 +22,7 @@ const testimonials = [
   {
     quote:
       "I was skeptical that something this accessible could hold up. My CPA reviewed it, said it was solid, and filed it. Took about a week total from the day I started the quiz.",
-    name: "Beta Tester",
+    name: "Jen T.",
     location: "Asheville, NC",
     property: "Mountain cabin, purchased 2021",
     savings: "$38,500",

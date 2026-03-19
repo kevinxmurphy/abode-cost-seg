@@ -11,11 +11,12 @@ import {
   buildSessionCookie,
 } from "@/lib/auth";
 import { upsertUser } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   try {
     if (!process.env.GOOGLE_CLIENT_ID) {
-      console.warn("[auth/google] GOOGLE_CLIENT_ID not set in environment");
+      log.warn("[auth/google] GOOGLE_CLIENT_ID not set in environment");
       return NextResponse.json(
         { success: false, error: "Google authentication is not configured." },
         { status: 503 }
@@ -23,7 +24,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { credential, propertyData } = body;
+    const { credential, propertyData, utmSource, utmMedium, utmCampaign } = body;
 
     if (!credential) {
       return NextResponse.json(
@@ -42,11 +43,11 @@ export async function POST(request) {
     }
 
     // 2. Upsert user in Supabase — get back their UUID
-    const dbUser = await upsertUser(googleUser);
+    const dbUser = await upsertUser({ ...googleUser, utmSource, utmMedium, utmCampaign });
     const userId = dbUser?.id || null;
 
     if (!dbUser) {
-      console.warn("[auth/google] DB upsert failed — continuing without userId");
+      log.warn("[auth/google] DB upsert failed — continuing without userId");
     }
 
     // 3. Build session (now includes userId)
@@ -72,7 +73,7 @@ export async function POST(request) {
     response.headers.set("Set-Cookie", cookieHeader);
     return response;
   } catch (error) {
-    console.error("[auth/google] Error:", error.message);
+    log.error("[auth/google] Error:", error.message);
     return NextResponse.json(
       { success: false, error: "Authentication failed" },
       { status: 500 }

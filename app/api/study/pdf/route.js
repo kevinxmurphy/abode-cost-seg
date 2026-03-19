@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { getServerClient } from "@/lib/supabase";
+import log from "@/lib/logger";
 
 /**
  * GET handler — Generate PDF from a stored study in Supabase.
@@ -45,7 +46,7 @@ export async function GET(request) {
     }
     study = data;
   } catch (err) {
-    console.error("[pdf/route] Supabase error:", err.message);
+    log.error("[pdf/route] Supabase error:", err.message);
     return new Response(
       JSON.stringify({ error: "Database error" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -92,7 +93,7 @@ export async function GET(request) {
       },
     });
   } catch (err) {
-    console.error("[pdf/route] PDF generation error:", err.message);
+    log.error("[pdf/route] PDF generation error:", err.message);
     return new Response(
       JSON.stringify({ error: "Failed to generate PDF" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -146,7 +147,7 @@ export async function POST(request) {
       },
     });
   } catch (err) {
-    console.error("[pdf/route] PDF generation error:", err.message);
+    log.error("[pdf/route] PDF generation error:", err.message);
     return new Response(
       JSON.stringify({ error: "Failed to generate PDF" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { getSession, buildSessionCookie, createSession } from "@/lib/auth";
 import { getUserById, updateUser, getUserByEmail } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 export async function GET(request) {
   try {
@@ -31,7 +32,7 @@ export async function GET(request) {
       created_at: user.created_at,
     });
   } catch (error) {
-    console.error("[user/profile] GET error:", error.message);
+    log.error("[user/profile] GET error:", error.message);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
   }
 }
@@ -95,7 +96,7 @@ export async function PATCH(request) {
 
     return response;
   } catch (error) {
-    console.error("[user/profile] PATCH error:", error.message);
+    log.error("[user/profile] PATCH error:", error.message);
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 }

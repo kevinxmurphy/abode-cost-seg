@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { getSession, verifyPassword, hashPassword } from "@/lib/auth";
 import { getUserById, updatePassword } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   try {
@@ -62,7 +63,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[user/change-password] Error:", error.message);
+    log.error("[user/change-password] Error:", error.message);
     return NextResponse.json(
       { error: "Password change failed." },
       { status: 500 }

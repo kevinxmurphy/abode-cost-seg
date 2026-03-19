@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { generateResetToken } from "@/lib/auth";
 import { getUserByEmail, setPasswordResetToken } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 const RESET_EXPIRY_MINUTES = 60;
 
@@ -38,7 +39,7 @@ export async function POST(request) {
     await setPasswordResetToken(user.id, tokenHash, expires);
 
     // Build reset URL
-    const origin = request.headers.get("origin") || "https://abodecostseg.com";
+    const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://abodecostseg.com";
     const resetUrl = `${origin}/reset-password?token=${token}`;
 
     // Send email via Resend (if configured) or log for dev
@@ -71,12 +72,12 @@ export async function POST(request) {
       });
     } else {
       // Dev fallback — log to console
-      console.info("[auth/reset-request] RESEND_API_KEY not set. Reset URL:", resetUrl);
+      log.info("[auth/reset-request] RESEND_API_KEY not set. Reset URL:", resetUrl);
     }
 
     return genericOk;
   } catch (error) {
-    console.error("[auth/reset-request] Error:", error.message);
+    log.error("[auth/reset-request] Error:", error.message);
     // Still return success to prevent enumeration
     return NextResponse.json({ success: true });
   }

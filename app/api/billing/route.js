@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getServerClient } from "@/lib/supabase";
 import { getUserByEmail } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 export async function GET(request) {
   const session = getSession(request);
@@ -42,7 +43,7 @@ export async function GET(request) {
     .order("paid_at", { ascending: false });
 
   if (error) {
-    console.error("[api/billing] error:", error.message);
+    log.error("[api/billing] error:", error.message);
     return NextResponse.json({ transactions: [] });
   }
 

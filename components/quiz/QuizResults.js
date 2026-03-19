@@ -22,6 +22,7 @@ import {
 import { captureEmail } from "@/lib/stubs";
 import { useCountUp } from "@/lib/useCountUp";
 import { saveProperty } from "@/lib/propertyStore";
+import { trackResultsViewed, trackGateShown, trackGateConverted, trackEmailCaptured, trackCheckoutInitiated, identify } from "@/lib/analytics";
 
 // Bonus depreciation rates by purchase year
 const BONUS_RATES = {
@@ -38,7 +39,7 @@ function getStudyCost(purchasePrice) {
 }
 
 // Reclassification % by property type and age
-function getReclassPercent(propertyType, yearBuilt) {
+function getReclassPercent(propertyType, yearBuilt, confidenceMode = "standard") {
   const age = new Date().getFullYear() - (yearBuilt || 2010);
   const type = (propertyType || "").toLowerCase();
   let base = 0.20;
@@ -48,10 +49,12 @@ function getReclassPercent(propertyType, yearBuilt) {
   else if (age > 20) base += 0.03;
   else if (age > 10) base += 0.02;
   else if (age < 3) base -= 0.02;
-  return Math.max(0.12, Math.min(base, 0.35));
+  if (confidenceMode === "maximized") base += 0.06;
+  const cap = confidenceMode === "maximized" ? 0.42 : 0.35;
+  return Math.max(0.12, Math.min(base, cap));
 }
 
-function calculateEstimate(answers) {
+function calculateEstimate(answers, confidenceMode = "standard") {
   const price = answers.purchasePrice || 500000;
   const bonusRate = BONUS_RATES[answers.purchaseYear] || 0.6;
   const bracket = 0.32;
@@ -62,7 +65,7 @@ function calculateEstimate(answers) {
   if (answers.assessedLand > 0 && answers.assessedImprovement > 0) {
     const totalAssessed = answers.assessedLand + answers.assessedImprovement;
     landRatio = answers.assessedLand / totalAssessed;
-    landRatio = Math.max(0.08, Math.min(landRatio, 0.45));
+    landRatio = Math.max(0.05, Math.min(landRatio, 0.80));
     landRatioSource = "county";
   }
 
@@ -70,7 +73,7 @@ function calculateEstimate(answers) {
 
   // Property-aware reclassification
   const yearBuilt = parseInt(answers.yearBuilt) || 0;
-  const reclassPercent = getReclassPercent(answers.propertyType, yearBuilt);
+  const reclassPercent = getReclassPercent(answers.propertyType, yearBuilt, confidenceMode);
   const accelerated = depreciableBasis * reclassPercent;
 
   const bonusDeduction = accelerated * bonusRate;
@@ -113,6 +116,7 @@ export default function QuizResults() {
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [confidenceMode, setConfidenceMode] = useState("standard");
   const googleBtnRef = useRef(null);
   const gateRef = useRef(null);
 
@@ -155,7 +159,7 @@ export default function QuizResults() {
   };
   const hasAirbnb = !!airbnb.title;
 
-  const estimate = calculateEstimate(answers);
+  const estimate = calculateEstimate(answers, confidenceMode);
   const studyCost = getStudyCost(answers.purchasePrice);
   const midpointDeduction = Math.round(estimate.firstYearDeduction);
   const midpointSavings = Math.round(midpointDeduction * 0.32);
@@ -210,6 +214,12 @@ export default function QuizResults() {
   }
   const detailsUrl = `/quiz/details?${detailParams.toString()}`;
 
+  // ─── Analytics ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    trackResultsViewed({ address: answers.address, purchasePrice: answers.purchasePrice });
+    trackGateShown();
+  }, []);
+
   // ─── Google Sign-In callback ────────────────────────────────────────────
   const handleGoogleCredential = useCallback(async (response) => {
     if (!response?.credential) {
@@ -227,7 +237,7 @@ export default function QuizResults() {
           propertyData: {
             answers,
             airbnb: hasAirbnb ? airbnb : null,
-            estimate: calculateEstimate(answers),
+            estimate: calculateEstimate(answers, confidenceMode),
           },
         }),
       });
@@ -235,11 +245,13 @@ export default function QuizResults() {
       if (data.success && data.user) {
         setAuthUser(data.user);
         setUnlocked(true);
+        trackGateConverted("google");
+        if (data.user.userId) identify(data.user.userId, { email: data.user.email, name: data.user.name });
         // Save property to local store so user can resume later
         saveProperty(data.user.email, {
           answers,
           airbnb: hasAirbnb ? airbnb : null,
-          estimate: calculateEstimate(answers),
+          estimate: calculateEstimate(answers, confidenceMode),
           detailsUrl,
           step: "results",
         });
@@ -309,18 +321,27 @@ export default function QuizResults() {
   const standardAnnual = useCountUp(estimate.standardAnnualDeduction, 1000, revealed);
   const multiplierDisplay = useCountUp(estimate.yearOneMultiplier * 10, 800, revealed);
 
-  function handleEmailSubmit(e) {
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  async function handleEmailSubmit(e) {
     e.preventDefault();
-    if (!email) return;
-    captureEmail(email);
-    setUnlocked(true);
-    saveProperty(email, {
-      answers,
-      airbnb: hasAirbnb ? airbnb : null,
-      estimate: calculateEstimate(answers),
-      detailsUrl,
-      step: "results",
-    });
+    if (!email || emailLoading) return;
+    setEmailLoading(true);
+    try {
+      await captureEmail(email, { source: "quiz-results", propertyAddress: answers.address });
+      setUnlocked(true);
+      trackGateConverted("email");
+      trackEmailCaptured("quiz-results");
+      saveProperty(email, {
+        answers,
+        airbnb: hasAirbnb ? airbnb : null,
+        estimate: calculateEstimate(answers, confidenceMode),
+        detailsUrl,
+        step: "results",
+      });
+    } finally {
+      setEmailLoading(false);
+    }
   }
 
   // Has rich property data from API?
@@ -462,6 +483,76 @@ export default function QuizResults() {
             )}
           </div>
 
+          {/* ═══ CONFIDENCE MODE TOGGLE ═══ */}
+          <div className="results-confidence-toggle" style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "var(--space-3)",
+            marginBottom: "var(--space-3)",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: "var(--space-2)", color: "var(--ink)" }}>
+              Study Approach
+            </div>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <button
+                onClick={() => setConfidenceMode("standard")}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "var(--radius-md)",
+                  border: confidenceMode === "standard" ? "2px solid var(--turq)" : "1px solid var(--border)",
+                  background: confidenceMode === "standard" ? "var(--turq-bg)" : "transparent",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "var(--font-primary)",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+                  <ShieldCheck size={14} style={{ marginRight: 4, verticalAlign: -2, color: "var(--turq)" }} />
+                  IRS-Conservative
+                </div>
+                <div style={{ fontSize: 11, color: "var(--dust)", marginTop: 2 }}>
+                  Lower reclassification %. Safest under audit.
+                </div>
+              </button>
+              <button
+                onClick={() => setConfidenceMode("maximized")}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "var(--radius-md)",
+                  border: confidenceMode === "maximized" ? "2px solid var(--turq)" : "1px solid var(--border)",
+                  background: confidenceMode === "maximized" ? "var(--turq-bg)" : "transparent",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "var(--font-primary)",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+                  <TrendingUp size={14} style={{ marginRight: 4, verticalAlign: -2, color: "var(--turq)" }} />
+                  Maximize Deductions
+                </div>
+                <div style={{ fontSize: 11, color: "var(--dust)", marginTop: 2 }}>
+                  Higher reclassification within IRS-defensible range.
+                </div>
+              </button>
+            </div>
+            {confidenceMode === "maximized" && (
+              <div style={{
+                marginTop: "var(--space-2)",
+                padding: "8px 12px",
+                background: "rgba(13, 148, 136, 0.06)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: 11,
+                color: "var(--ink-mid)",
+                lineHeight: 1.5,
+              }}>
+                These allocations are within IRS-defensible ranges and supported by the same legal authorities. Higher reclassification percentages are common in professional engineering-based studies. Consult your CPA.
+              </div>
+            )}
+          </div>
+
           {/* ═══ ROI ANCHORS — always visible ═══ */}
           <div className="results-roi-strip">
             <div className="results-roi-item">
@@ -589,10 +680,11 @@ export default function QuizResults() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={emailLoading}
                   />
-                  <button type="submit" className="btn btn-primary btn-lg" style={{ width: "100%" }}>
-                    Get My Full Breakdown
-                    <ArrowRight size={18} />
+                  <button type="submit" className="btn btn-primary btn-lg" style={{ width: "100%" }} disabled={emailLoading}>
+                    {emailLoading ? "Unlocking..." : "Get My Full Breakdown"}
+                    {!emailLoading && <ArrowRight size={18} />}
                   </button>
                 </form>
 

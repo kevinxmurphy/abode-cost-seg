@@ -8,6 +8,7 @@ import { getSession } from "@/lib/auth";
 import { getServerClient } from "@/lib/supabase";
 import { getUserByEmail } from "@/lib/db/users";
 import { sendStudyShareCPA } from "@/lib/email";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   const session = getSession(request);
@@ -84,7 +85,7 @@ export async function POST(request) {
 
     return NextResponse.json({ sent: true });
   } catch (err) {
-    console.error("[study/share] Email error:", err.message);
+    log.error("[study/share] Email error:", err.message);
     return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
   }
 }

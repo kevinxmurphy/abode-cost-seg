@@ -18,6 +18,7 @@ import {
   serverCacheSet,
   buildAirbnbCacheKey,
 } from "@/lib/propertyCache";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   let body;
@@ -76,7 +77,7 @@ export async function POST(request) {
   // ─── Apify availability check ─────────────────────────────────────────────
   const apifyToken = process.env.APIFY_API_TOKEN;
   if (!apifyToken) {
-    console.warn("[Airbnb Lookup] APIFY_API_TOKEN not configured");
+    log.warn("[Airbnb Lookup] APIFY_API_TOKEN not configured");
     return NextResponse.json({
       listing: null,
       source: "not_configured",
@@ -88,11 +89,11 @@ export async function POST(request) {
   // ─── Fetch from Apify ─────────────────────────────────────────────────────
   let rawListing = null;
   try {
-    console.log(`[Airbnb Lookup] Fetching listing: ${listingUrl}`);
+    log.info(`[Airbnb Lookup] Fetching listing: ${listingUrl}`);
     rawListing = await fetchAirbnbDetails(listingUrl);
   } catch (err) {
     if (err instanceof ApifyError) {
-      console.error(`[Airbnb Lookup] Apify error: ${err.message}`);
+      log.error(`[Airbnb Lookup] Apify error: ${err.message}`);
       return NextResponse.json(
         {
           listing: null,
