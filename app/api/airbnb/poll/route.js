@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { checkActorRun, ApifyError } from "@/lib/apify";
 import { transformAirbnbData } from "@/lib/propertyTransformer";
 import { serverCacheSet, buildAirbnbCacheKey } from "@/lib/propertyCache";
+import log from "@/lib/logger";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -32,7 +33,7 @@ export async function GET(request) {
 
     // Failed/aborted
     if (["FAILED", "ABORTED", "TIMED-OUT"].includes(result.status)) {
-      console.warn(`[Airbnb Poll] Run ${runId} ended with status ${result.status}`);
+      log.warn(`[Airbnb Poll] Run ${runId} ended with status ${result.status}`);
       return NextResponse.json({
         status: "failed",
         fallback: true,
@@ -65,7 +66,7 @@ export async function GET(request) {
         serverCacheSet(cacheKey, listing);
       }
 
-      console.log(`[Airbnb Poll] ✅ Run ${runId} complete — ${listing.title}`);
+      log.info(`[Airbnb Poll] Run ${runId} complete — ${listing.title}`);
       return NextResponse.json({ status: "done", listing });
     }
 
@@ -74,7 +75,7 @@ export async function GET(request) {
 
   } catch (err) {
     if (err instanceof ApifyError) {
-      console.error(`[Airbnb Poll] ${err.message}`);
+      log.error(`[Airbnb Poll] ${err.message}`);
       return NextResponse.json({
         status: "failed",
         fallback: true,

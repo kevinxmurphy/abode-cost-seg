@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { sendStudyComplete } from "@/lib/email";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request) {
     return NextResponse.json({ sent: true });
   } catch (err) {
     // Email failure should never break the user's flow — log and return 200
-    console.error("[email/study-complete] Error:", err.message);
+    log.error("[email/study-complete] Error:", err.message);
     return NextResponse.json({ sent: false, error: err.message });
   }
 }

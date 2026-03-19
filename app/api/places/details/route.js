@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 import { parseGooglePlacesComponents, isZillowLookupViable } from "@/lib/addressUtils";
 import { serverCacheGet, serverCacheSet, buildPlacesCacheKey } from "@/lib/propertyCache";
+import log from "@/lib/logger";
 
 const DETAILS_API = "https://maps.googleapis.com/maps/api/place/details/json";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours (place details don't change)
@@ -28,7 +29,7 @@ export async function GET(request) {
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
-    console.warn("[Places Details] GOOGLE_PLACES_API_KEY not configured");
+    log.warn("[Places Details] GOOGLE_PLACES_API_KEY not configured");
     return NextResponse.json(
       { error: "Address API not configured", fallback: true },
       { status: 200 }
@@ -60,7 +61,7 @@ export async function GET(request) {
     const data = await response.json();
 
     if (data.status !== "OK") {
-      console.error("[Places Details] API error:", data.status);
+      log.error("[Places Details] API error:", data.status);
       return NextResponse.json(
         { error: `Places API error: ${data.status}`, fallback: true },
         { status: 200 }
@@ -94,7 +95,7 @@ export async function GET(request) {
 
     return NextResponse.json({ result });
   } catch (err) {
-    console.error("[Places Details] Error:", err.message);
+    log.error("[Places Details] Error:", err.message);
     return NextResponse.json(
       { error: "Could not fetch address details", fallback: true },
       { status: 200 }

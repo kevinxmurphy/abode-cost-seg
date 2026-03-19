@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { stripe, PRICE_ID } from "@/lib/stripe";
 import { getSession } from "@/lib/auth";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   try {
@@ -52,7 +53,7 @@ export async function POST(request) {
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
-    console.error("[checkout/session] Error:", err);
+    log.error("[checkout/session] Error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to create checkout session" },
       { status: 500 }

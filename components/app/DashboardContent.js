@@ -11,7 +11,6 @@ import {
   TrendingUp,
   Building2,
 } from "lucide-react";
-import { MOCK_PROPERTIES, MOCK_STUDY } from "@/lib/stubs";
 import Badge from "@/components/ui/Badge";
 
 /* ── Static Data ── */
@@ -60,33 +59,39 @@ function buildSummaryStats(properties, study) {
   ];
 }
 
-// STUB: Replace with real activity from DB
-const MOCK_ACTIVITY = [
-  {
-    id: "act_1",
-    text: "Cost seg study completed for 74001 Desert Rose Lane",
-    time: "2 days ago",
-    type: "complete",
-  },
-  {
-    id: "act_2",
-    text: "Study in progress for 1842 Sunset Canyon Dr",
-    time: "5 days ago",
-    type: "processing",
-  },
-  {
-    id: "act_3",
-    text: "Property added: 328 Mountain View Ct, Park City",
-    time: "1 week ago",
-    type: "info",
-  },
-  {
-    id: "act_4",
-    text: "Account created",
-    time: "2 weeks ago",
-    type: "info",
-  },
-];
+/** Derive recent activity from real property data */
+function buildActivity(properties) {
+  if (!properties || properties.length === 0) return [];
+  const items = [];
+  for (const p of properties) {
+    const addr = p.airbnb_title || p.airbnbTitle || p.address || "Property";
+    const step = p.study_status || p.step || p.studyStatus || "estimate";
+    if (step === "complete" || step === "purchased") {
+      items.push({ id: `act_${p.id}_complete`, text: `Cost seg study completed for ${addr}`, type: "complete", sortDate: p.updated_at || p.created_at });
+    } else if (step === "processing") {
+      items.push({ id: `act_${p.id}_processing`, text: `Study in progress for ${addr}`, type: "processing", sortDate: p.updated_at || p.created_at });
+    } else {
+      items.push({ id: `act_${p.id}_added`, text: `Property added: ${addr}`, type: "info", sortDate: p.created_at || p.updated_at });
+    }
+  }
+  items.sort((a, b) => (b.sortDate || "").localeCompare(a.sortDate || ""));
+  return items.slice(0, 5).map((item) => ({
+    ...item,
+    time: item.sortDate ? formatRelative(item.sortDate) : "",
+  }));
+}
+
+function formatRelative(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins <= 1 ? "Just now" : `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+}
 
 /* ── Component ── */
 
@@ -142,21 +147,17 @@ export default function DashboardContent() {
     return <SignInPrompt />;
   }
 
-  // Use DB properties, fall back to mocks while loading or if empty
-  const liveProperties = dbProperties || [];
-  const properties = liveProperties.length > 0 ? liveProperties : MOCK_PROPERTIES;
-  const study = liveProperties.length > 0 ? null : MOCK_STUDY;
+  const properties = dbProperties || [];
   const summaryStats = buildSummaryStats(
-    liveProperties.length > 0
-      ? liveProperties.map((p) => ({
-          ...p,
-          estimate: p.estimate,
-          studyStatus: p.study_status || p.step || "estimate",
-        }))
-      : MOCK_PROPERTIES,
-    study
+    properties.map((p) => ({
+      ...p,
+      estimate: p.estimate,
+      studyStatus: p.study_status || p.step || "estimate",
+    })),
+    null
   );
   const hasProperties = properties.length > 0;
+  const activity = buildActivity(properties);
 
   return (
     <div>
@@ -201,22 +202,24 @@ export default function DashboardContent() {
       </section>
 
       {/* Recent Activity */}
-      <section className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="h3-component">Recent Activity</h2>
-        </div>
-        <div className="dash-activity-list">
-          {MOCK_ACTIVITY.map((item) => (
-            <div key={item.id} className="dash-activity-item">
-              <div className={`dash-activity-dot ${item.type}`} aria-hidden="true" />
-              <div className="dash-activity-content">
-                <div className="dash-activity-text">{item.text}</div>
-                <div className="dash-activity-time">{item.time}</div>
+      {activity.length > 0 && (
+        <section className="dash-section">
+          <div className="dash-section-header">
+            <h2 className="h3-component">Recent Activity</h2>
+          </div>
+          <div className="dash-activity-list">
+            {activity.map((item) => (
+              <div key={item.id} className="dash-activity-item">
+                <div className={`dash-activity-dot ${item.type}`} aria-hidden="true" />
+                <div className="dash-activity-content">
+                  <div className="dash-activity-text">{item.text}</div>
+                  <div className="dash-activity-time">{item.time}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

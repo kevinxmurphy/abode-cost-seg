@@ -12,6 +12,7 @@ import {
   buildSessionCookie,
 } from "@/lib/auth";
 import { getUserByResetToken, updatePassword } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 const MIN_PASSWORD_LEN = 8;
 
@@ -76,7 +77,7 @@ export async function POST(request) {
     response.headers.set("Set-Cookie", cookieHeader);
     return response;
   } catch (error) {
-    console.error("[auth/reset-confirm] Error:", error.message);
+    log.error("[auth/reset-confirm] Error:", error.message);
     return NextResponse.json(
       { success: false, error: "Password reset failed. Please try again." },
       { status: 500 }

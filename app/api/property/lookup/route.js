@@ -18,6 +18,7 @@ import { lookupRealtorPropertyId, fetchRealtorPropertyDetails } from "@/lib/real
 import { lookupZpid, ApifyError } from "@/lib/apify";
 import { serverCacheGet, serverCacheSet, buildPropertyCacheKey } from "@/lib/propertyCache";
 import { dbCacheGet, dbCacheSet } from "@/lib/db/cache";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   let body;
@@ -63,11 +64,11 @@ export async function POST(request) {
   // PRIMARY: Realtor.com (FREE, rich data, actual land/building split)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  console.log(`[Property Lookup] Searching Realtor.com for: ${addressQuery}`);
+  log.info(`[Property Lookup] Searching Realtor.com for: ${addressQuery}`);
   const realtorResult = await lookupRealtorPropertyId(addressQuery);
 
   if (realtorResult?.propertyId) {
-    console.log(`[Property Lookup] Got Realtor ID: ${realtorResult.propertyId}`);
+    log.info(`[Property Lookup] Got Realtor ID: ${realtorResult.propertyId}`);
 
     const property = await fetchRealtorPropertyDetails(realtorResult.propertyId);
 
@@ -89,7 +90,7 @@ export async function POST(request) {
       // Cache in both layers
       serverCacheSet(cacheKey, property);
       dbCacheSet(cacheKey, "property", property).catch(() => {});
-      console.log(`[Property Lookup] ✅ Realtor.com: ${property.beds}bd/${property.baths}ba, ${property.sqft}sqft, built ${property.yearBuilt}, land $${property.assessedLand?.toLocaleString()}`);
+      log.info(`[Property Lookup] Realtor.com: ${property.beds}bd/${property.baths}ba, ${property.sqft}sqft, built ${property.yearBuilt}`);
 
       return NextResponse.json({
         property,
@@ -103,7 +104,7 @@ export async function POST(request) {
   // FALLBACK: Zillow autocomplete → Apify Actor 1 (basic data)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  console.log(`[Property Lookup] Realtor.com miss — trying Zillow fallback`);
+  log.info(`[Property Lookup] Realtor.com miss — trying Zillow fallback`);
 
   const zpidResult = await lookupZpidFromZillow(addressQuery);
 
@@ -162,7 +163,7 @@ export async function POST(request) {
 
       serverCacheSet(cacheKey, property);
       dbCacheSet(cacheKey, "property", property).catch(() => {});
-      console.log(`[Property Lookup] ✅ Zillow fallback: ${property.beds}bd/${property.baths}ba`);
+      log.info(`[Property Lookup] Zillow fallback: ${property.beds}bd/${property.baths}ba`);
 
       return NextResponse.json({
         property,
@@ -173,7 +174,7 @@ export async function POST(request) {
     }
   } catch (err) {
     if (err instanceof ApifyError) {
-      console.error(`[Property Lookup] Apify error: ${err.message}`);
+      log.error(`[Property Lookup] Apify error: ${err.message}`);
     } else {
       throw err;
     }

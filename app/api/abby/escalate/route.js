@@ -1,6 +1,8 @@
 // STUB: Replace console.log with email service (Resend / SendGrid / Loops) before go-live.
 // Current recipient: kevinxmurphy@gmail.com — PRE-PRODUCTION ONLY. Change before launch.
 
+import log from "@/lib/logger";
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -49,12 +51,12 @@ export async function POST(request) {
     // });
 
     // Log to server console (visible in dev + deployment logs)
-    console.log('[Abby Escalation]', JSON.stringify(submission, null, 2));
+    log.info('[Abby Escalation]', JSON.stringify(submission, null, 2));
 
     return Response.json({ success: true });
 
   } catch (err) {
-    console.error('[Abby] Escalation error:', err?.message ?? err);
+    log.error('[Abby] Escalation error:', err?.message ?? err);
     return Response.json(
       { error: 'Something went wrong. Please email support@abodecostseg.com directly.' },
       { status: 500 }

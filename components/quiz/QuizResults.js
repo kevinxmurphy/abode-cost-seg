@@ -309,18 +309,25 @@ export default function QuizResults() {
   const standardAnnual = useCountUp(estimate.standardAnnualDeduction, 1000, revealed);
   const multiplierDisplay = useCountUp(estimate.yearOneMultiplier * 10, 800, revealed);
 
-  function handleEmailSubmit(e) {
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  async function handleEmailSubmit(e) {
     e.preventDefault();
-    if (!email) return;
-    captureEmail(email);
-    setUnlocked(true);
-    saveProperty(email, {
-      answers,
-      airbnb: hasAirbnb ? airbnb : null,
-      estimate: calculateEstimate(answers),
-      detailsUrl,
-      step: "results",
-    });
+    if (!email || emailLoading) return;
+    setEmailLoading(true);
+    try {
+      await captureEmail(email, { source: "quiz-results", propertyAddress: answers.address });
+      setUnlocked(true);
+      saveProperty(email, {
+        answers,
+        airbnb: hasAirbnb ? airbnb : null,
+        estimate: calculateEstimate(answers),
+        detailsUrl,
+        step: "results",
+      });
+    } finally {
+      setEmailLoading(false);
+    }
   }
 
   // Has rich property data from API?
@@ -589,10 +596,11 @@ export default function QuizResults() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={emailLoading}
                   />
-                  <button type="submit" className="btn btn-primary btn-lg" style={{ width: "100%" }}>
-                    Get My Full Breakdown
-                    <ArrowRight size={18} />
+                  <button type="submit" className="btn btn-primary btn-lg" style={{ width: "100%" }} disabled={emailLoading}>
+                    {emailLoading ? "Unlocking..." : "Get My Full Breakdown"}
+                    {!emailLoading && <ArrowRight size={18} />}
                   </button>
                 </form>
 

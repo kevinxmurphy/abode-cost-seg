@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { parseAirbnbUrl } from "@/lib/airbnbParser";
 import { buildAirbnbInput, startActorRun, ACTORS, ApifyError } from "@/lib/apify";
 import { serverCacheGet, buildAirbnbCacheKey } from "@/lib/propertyCache";
+import log from "@/lib/logger";
 
 export async function POST(request) {
   let body;
@@ -65,12 +66,12 @@ export async function POST(request) {
       { memoryMbytes: 256 }
     );
 
-    console.log(`[Airbnb Start] Fired run ${runId} for listing ${roomId}`);
+    log.info(`[Airbnb Start] Fired run ${runId} for listing ${roomId}`);
     return NextResponse.json({ runId, roomId, listingUrl, status: "started" });
 
   } catch (err) {
     if (err instanceof ApifyError) {
-      console.error(`[Airbnb Start] ${err.message}`);
+      log.error(`[Airbnb Start] ${err.message}`);
       return NextResponse.json({
         fallback: true,
         message: "Could not start Airbnb lookup. Enter property details manually.",

@@ -9,6 +9,7 @@
 // Output: { results: [{ imageUrl, category, detections }] }
 
 import { NextResponse } from "next/server";
+import log from "@/lib/logger";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -116,7 +117,7 @@ export async function POST(request) {
       total: results.length,
     });
   } catch (error) {
-    console.error("[vision/analyze] Error:", error.message);
+    log.error("[vision/analyze] Error:", error.message);
     return NextResponse.json(
       { success: false, error: "Image analysis failed" },
       { status: 500 }
@@ -165,7 +166,7 @@ async function analyzeImage(apiKey, img, propertyType) {
 
   if (!response.ok) {
     const err = await response.text();
-    console.error("[vision/analyze] Claude API error:", response.status, err);
+    log.error("[vision/analyze] Claude API error:", response.status, err);
     throw new Error(`Claude API error: ${response.status}`);
   }
 
@@ -181,7 +182,7 @@ async function analyzeImage(apiKey, img, propertyType) {
       detections: Array.isArray(parsed.detections) ? parsed.detections : [],
     };
   } catch (parseError) {
-    console.error("[vision/analyze] JSON parse error:", parseError.message, "Raw:", text.slice(0, 200));
+    log.error("[vision/analyze] JSON parse error:", parseError.message, "Raw:", text.slice(0, 200));
     return { room_type: "other", detections: [] };
   }
 }

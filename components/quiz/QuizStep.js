@@ -503,7 +503,7 @@ function AddressInput({ value, onChange, placeholder, phase = "full" }) {
       }
       // If fallback: true or property: null, keep provisional (manual entry remains)
     } catch {
-      // Network error — keep provisional, user can edit manually
+      setLookupError("Could not look up property records. You can enter details manually.");
     } finally {
       setLookupLoading(false);
     }
@@ -680,6 +680,12 @@ function AddressInput({ value, onChange, placeholder, phase = "full" }) {
                 : "Street view — available with full study"}
             </span>
           </div>
+
+          {lookupError && (
+            <div style={{ padding: "8px 16px", background: "rgba(184,80,48,0.08)", color: "var(--adobe)", fontSize: 13, lineHeight: 1.5 }}>
+              {lookupError}
+            </div>
+          )}
 
           <div className="quiz-property-details">
             {hasData ? (

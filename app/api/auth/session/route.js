@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { getSession, clearSession } from "@/lib/auth";
+import log from "@/lib/logger";
 
 export async function GET(request) {
   try {
@@ -28,7 +29,7 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    console.error("[auth/session] GET error:", error.message);
+    log.error("[auth/session] GET error:", error.message);
     return NextResponse.json({
       authenticated: false,
     });
@@ -44,7 +45,7 @@ export async function DELETE() {
       { headers }
     );
   } catch (error) {
-    console.error("[auth/session] DELETE error:", error.message);
+    log.error("[auth/session] DELETE error:", error.message);
     return NextResponse.json(
       { success: false, error: "Logout failed" },
       { status: 500 }

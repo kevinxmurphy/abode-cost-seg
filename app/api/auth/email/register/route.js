@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { hashPassword, createSession, buildSessionCookie } from "@/lib/auth";
 import { createEmailUser, getUserByEmail } from "@/lib/db/users";
+import log from "@/lib/logger";
 
 const MIN_PASSWORD_LEN = 8;
 
@@ -79,7 +80,7 @@ export async function POST(request) {
     response.headers.set("Set-Cookie", cookieHeader);
     return response;
   } catch (error) {
-    console.error("[auth/email/register] Error:", error.message);
+    log.error("[auth/email/register] Error:", error.message);
     return NextResponse.json(
       { success: false, error: "Registration failed. Please try again." },
       { status: 500 }

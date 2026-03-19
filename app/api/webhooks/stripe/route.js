@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getServerClient } from "@/lib/supabase";
 import { sendPurchaseConfirmation } from "@/lib/email";
+import log from "@/lib/logger";
 
 // Disable Next.js body parsing — Stripe needs the raw body for signature verification
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ export async function POST(request) {
 
   // If no webhook secret configured, log and return 200 (don't block during dev)
   if (!webhookSecret) {
-    console.warn("[webhook/stripe] No STRIPE_WEBHOOK_SECRET configured — skipping verification");
+    log.warn("[webhook/stripe] No STRIPE_WEBHOOK_SECRET configured — skipping verification");
     return NextResponse.json({ received: true });
   }
 
@@ -28,7 +29,7 @@ export async function POST(request) {
 
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
-    console.error("[webhook/stripe] Signature verification failed:", err.message);
+    log.error("[webhook/stripe] Signature verification failed:", err.message);
     return NextResponse.json(
       { error: "Webhook signature verification failed" },
       { status: 400 }
@@ -40,12 +41,7 @@ export async function POST(request) {
     case "checkout.session.completed": {
       const session = event.data.object;
 
-      console.log("[webhook/stripe] checkout.session.completed:", {
-        sessionId: session.id,
-        customerEmail: session.customer_details?.email,
-        paymentStatus: session.payment_status,
-        metadata: session.metadata,
-      });
+      log.info("[webhook/stripe] checkout.session.completed:", session.id);
 
       // Update property status in Supabase if we have a propertyId
       const propertyId = session.metadata?.propertyId;
@@ -64,12 +60,12 @@ export async function POST(request) {
             .eq("id", propertyId);
 
           if (error) {
-            console.error("[webhook/stripe] Supabase update failed:", error);
+            log.error("[webhook/stripe] Supabase update failed:", error);
           } else {
-            console.log("[webhook/stripe] Property updated to 'purchased':", propertyId);
+            log.info("[webhook/stripe] Property updated to 'purchased':", propertyId);
           }
         } catch (dbErr) {
-          console.error("[webhook/stripe] DB error:", dbErr);
+          log.error("[webhook/stripe] DB error:", dbErr);
         }
       }
 
@@ -88,7 +84,7 @@ export async function POST(request) {
           });
         } catch (insertErr) {
           // Table may not exist yet — that's ok, log and continue
-          console.warn("[webhook/stripe] Purchases insert failed (table may not exist):", insertErr.message);
+          log.warn("[webhook/stripe] Purchases insert failed (table may not exist):", insertErr.message);
         }
       }
 
@@ -109,7 +105,7 @@ export async function POST(request) {
     }
 
     default:
-      console.log("[webhook/stripe] Unhandled event type:", event.type);
+      log.info("[webhook/stripe] Unhandled event type:", event.type);
   }
 
   return NextResponse.json({ received: true });

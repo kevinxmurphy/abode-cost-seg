@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ABBY_SYSTEM_PROMPT, ABBY_KNOWLEDGE_BASE } from '@/lib/abbyKnowledge';
+import log from "@/lib/logger";
 
 // Lazy-initialized to avoid crashing the build when ANTHROPIC_API_KEY is not set.
 let _client = null;
@@ -87,7 +88,7 @@ export async function POST(request) {
     return Response.json({ reply });
 
   } catch (err) {
-    console.error('[Abby] Chat error:', err?.message ?? err);
+    log.error('[Abby] Chat error:', err?.message ?? err);
     return Response.json({
       reply:
         "Sorry, I'm having trouble connecting right now. You can reach our team at support@abodecostseg.com or use the contact form.",
