@@ -1473,20 +1473,23 @@ function AirbnbVerifyStep({ airbnbJob, onChange }) {
   );
 }
 
-// Pick top cost-seg-relevant amenities for badge display
+// Pick top cost-seg-relevant amenities for badge display.
+// Uses the flat amenities[] list (strings) from the transformer.
 function getTopAmenities(airbnbData) {
   const highlights = [];
-  const enrichment = airbnbData.categoryEnrichment || {};
+  const amenities = airbnbData.amenities || [];
+  const lower = amenities.map((a) => (typeof a === "string" ? a : "").toLowerCase());
 
-  if (enrichment.pool && enrichment.pool !== "none") highlights.push("Pool");
-  if (enrichment["pool-features"]?.includes("hot-tub")) highlights.push("Hot Tub");
-  if (enrichment["outdoor-features"]?.includes("outdoor-kitchen")) highlights.push("Outdoor Kitchen");
-  if (enrichment["outdoor-features"]?.includes("fire-pit")) highlights.push("Fire Pit");
-  if (enrichment["interior-features"]?.includes("fireplace")) highlights.push("Fireplace");
-  if (enrichment.security === "professional") highlights.push("Security System");
-  if (enrichment["smart-features"]?.includes("smart-locks")) highlights.push("Smart Locks");
-  if (enrichment["hvac-type"]?.includes("central")) highlights.push("Central AC");
-  if (enrichment.entertainment?.includes("game-room")) highlights.push("Game Room");
+  if (lower.some((a) => a.includes("pool") && !a.includes("pool table"))) highlights.push("Pool");
+  if (lower.some((a) => a.includes("hot tub") || a.includes("jacuzzi"))) highlights.push("Hot Tub");
+  if (lower.some((a) => a.includes("sauna"))) highlights.push("Sauna");
+  if (lower.some((a) => a.includes("outdoor kitchen") || a.includes("outdoor grill") || a.includes("bbq grill"))) highlights.push("Outdoor Kitchen");
+  if (lower.some((a) => a.includes("fire pit") || a.includes("fire table"))) highlights.push("Fire Pit");
+  if (lower.some((a) => a.includes("fireplace") && !a.includes("outdoor"))) highlights.push("Fireplace");
+  if (lower.some((a) => a.includes("game room") || a.includes("game table") || a.includes("billiard"))) highlights.push("Game Room");
+  if (lower.some((a) => a.includes("ev charger") || a.includes("electric vehicle"))) highlights.push("EV Charger");
+  if (lower.some((a) => a.includes("security") || a.includes("alarm system"))) highlights.push("Security System");
+  if (lower.some((a) => a.includes("smart lock") || a.includes("keypad"))) highlights.push("Smart Locks");
 
   return highlights.slice(0, 6);
 }

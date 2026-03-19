@@ -232,8 +232,8 @@ export default function QuizShell() {
           const imageSlice = imageSource
             .slice(0, 12)
             .map((img) => ({
-              caption: img.caption || "",
-              imageUrl: img.url || img.imageUrl || "",
+              caption: typeof img === "string" ? "" : (img.caption || ""),
+              imageUrl: typeof img === "string" ? img : (img.url || img.imageUrl || ""),
             }))
             .filter((img) => img.imageUrl);
           if (imageSlice.length > 0) {
