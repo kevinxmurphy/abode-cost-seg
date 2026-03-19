@@ -10,6 +10,9 @@
 
 import { NextResponse } from "next/server";
 import log from "@/lib/logger";
+import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
+
+const limiter = rateLimit({ windowMs: 60_000, max: 10 });
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -56,6 +59,9 @@ Only include items you can clearly see. Set confidence based on visibility (0.9+
  * Analyze a batch of images (up to 5 at a time to manage API costs).
  */
 export async function POST(request) {
+  const { limited } = limiter(request);
+  if (limited) return tooManyRequests();
+
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
