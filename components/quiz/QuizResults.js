@@ -22,6 +22,7 @@ import {
 import { captureEmail } from "@/lib/stubs";
 import { useCountUp } from "@/lib/useCountUp";
 import { saveProperty } from "@/lib/propertyStore";
+import { trackResultsViewed, trackGateShown, trackGateConverted, trackEmailCaptured, trackCheckoutInitiated, identify } from "@/lib/analytics";
 
 // Bonus depreciation rates by purchase year
 const BONUS_RATES = {
@@ -210,6 +211,12 @@ export default function QuizResults() {
   }
   const detailsUrl = `/quiz/details?${detailParams.toString()}`;
 
+  // ─── Analytics ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    trackResultsViewed({ address: answers.address, purchasePrice: answers.purchasePrice });
+    trackGateShown();
+  }, []);
+
   // ─── Google Sign-In callback ────────────────────────────────────────────
   const handleGoogleCredential = useCallback(async (response) => {
     if (!response?.credential) {
@@ -235,6 +242,8 @@ export default function QuizResults() {
       if (data.success && data.user) {
         setAuthUser(data.user);
         setUnlocked(true);
+        trackGateConverted("google");
+        if (data.user.userId) identify(data.user.userId, { email: data.user.email, name: data.user.name });
         // Save property to local store so user can resume later
         saveProperty(data.user.email, {
           answers,
@@ -318,6 +327,8 @@ export default function QuizResults() {
     try {
       await captureEmail(email, { source: "quiz-results", propertyAddress: answers.address });
       setUnlocked(true);
+      trackGateConverted("email");
+      trackEmailCaptured("quiz-results");
       saveProperty(email, {
         answers,
         airbnb: hasAirbnb ? airbnb : null,

@@ -46,6 +46,11 @@ function SuccessContent() {
     }
 
     setStatus("success");
+
+    // Track purchase completion
+    if (typeof window !== "undefined" && window.posthog) {
+      window.posthog.capture("purchase_completed", { session_id: sessionId });
+    }
   }, [sessionId]);
 
   const Logo = () => (

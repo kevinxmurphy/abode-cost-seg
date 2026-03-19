@@ -39,7 +39,7 @@ export async function POST(request) {
     await setPasswordResetToken(user.id, tokenHash, expires);
 
     // Build reset URL
-    const origin = request.headers.get("origin") || "https://abodecostseg.com";
+    const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://abodecostseg.com";
     const resetUrl = `${origin}/reset-password?token=${token}`;
 
     // Send email via Resend (if configured) or log for dev

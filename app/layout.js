@@ -4,18 +4,20 @@ import CookieConsent from "@/components/ui/CookieConsent";
 import AbbyWidget from "@/components/ui/AbbyWidget";
 import PostHogProvider from "@/components/providers/PostHogProvider";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.abodecostseg.com";
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 export const metadata = {
   title: "Cost Segregation Study for Airbnb & Short-Term Rentals | Abode",
   description:
     "Get an IRS-compliant cost segregation study for your Airbnb or short-term rental in minutes. STR owners typically identify $30K–$150K in first-year depreciation deductions. AI-powered, CPA-ready.",
-  metadataBase: new URL("https://www.abodecostseg.com"),
+  metadataBase: new URL(APP_URL),
   openGraph: {
     title: "Cost Segregation Study for Airbnb & Short-Term Rentals | Abode",
     description:
       "Get an IRS-compliant cost segregation study for your Airbnb or short-term rental in minutes. STR owners typically identify $30K–$150K in first-year depreciation deductions.",
-    url: "https://www.abodecostseg.com",
+    url: APP_URL,
     siteName: "Abode Cost Segregation",
     locale: "en_US",
     type: "website",
@@ -41,8 +43,8 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "Abode Cost Segregation",
-  url: "https://www.abodecostseg.com",
-  logo: "https://www.abodecostseg.com/logo.png",
+  url: APP_URL,
+  logo: `${APP_URL}/logo.png`,
   description:
     "AI-powered cost segregation studies for short-term rental investors. IRS-compliant, CPA-reviewed, delivered in minutes.",
   sameAs: [
@@ -65,13 +67,13 @@ const webSiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "Abode Cost Segregation",
-  url: "https://www.abodecostseg.com",
+  url: APP_URL,
   publisher: { "@type": "Organization", name: "Abode Cost Segregation" },
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: "https://www.abodecostseg.com/learn?q={search_term_string}",
+      urlTemplate: `${APP_URL}/learn?q={search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },
@@ -111,6 +113,36 @@ export default function RootLayout({ children }) {
                 })(window,document,'script','dataLayer','${GTM_ID}');`,
             }}
           />
+        )}
+        {/* Meta Pixel */}
+        {META_PIXEL_ID && (
+          <Script
+            id="meta-pixel"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `!function(f,b,e,v,n,t,s)
+                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                n.queue=[];t=b.createElement(e);t.async=!0;
+                t.src=v;s=b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t,s)}(window,document,'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+                fbq('init','${META_PIXEL_ID}');
+                fbq('track','PageView');`,
+            }}
+          />
+        )}
+        {META_PIXEL_ID && (
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style={{ display: "none" }}
+              src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+              alt=""
+            />
+          </noscript>
         )}
         {/* Google Identity Services — async load, used for sign-in on results page */}
         <Script

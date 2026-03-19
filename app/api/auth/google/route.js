@@ -24,7 +24,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { credential, propertyData } = body;
+    const { credential, propertyData, utmSource, utmMedium, utmCampaign } = body;
 
     if (!credential) {
       return NextResponse.json(
@@ -43,7 +43,7 @@ export async function POST(request) {
     }
 
     // 2. Upsert user in Supabase — get back their UUID
-    const dbUser = await upsertUser(googleUser);
+    const dbUser = await upsertUser({ ...googleUser, utmSource, utmMedium, utmCampaign });
     const userId = dbUser?.id || null;
 
     if (!dbUser) {

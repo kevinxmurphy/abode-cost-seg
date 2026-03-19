@@ -6,6 +6,7 @@ import Link from "next/link";
 import { X, ArrowLeft, CornerDownLeft } from "lucide-react";
 import { QUIZ_STEPS, DISQUALIFY_MESSAGE } from "@/lib/quizData";
 import { AbodeLogo } from "@/components/ui/NavBar";
+import { trackQuizStarted, trackQuizCompleted } from "@/lib/analytics";
 import QuizStep from "./QuizStep";
 import RunningEstimate from "./RunningEstimate";
 
@@ -32,6 +33,9 @@ export default function QuizShell() {
   const [direction, setDirection] = useState("forward");
   const [disqualified, setDisqualified] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+
+  // Track quiz start on mount
+  useEffect(() => { trackQuizStarted(); }, []);
 
   // Background Airbnb job — owned here so it persists across steps
   const [airbnbJob, setAirbnbJob] = useState({
@@ -293,9 +297,10 @@ export default function QuizShell() {
           params.set(key, val);
         }
       });
+      trackQuizCompleted({ steps: totalSteps, propertyUse: all.propertyUse });
       router.push(`/quiz/results?${params.toString()}`);
     },
-    [answers, router]
+    [answers, router, totalSteps]
   );
 
   const handleNext = useCallback(() => {

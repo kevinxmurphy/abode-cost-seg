@@ -12,7 +12,7 @@ const MIN_PASSWORD_LEN = 8;
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, name, password } = body;
+    const { email, name, password, utmSource, utmMedium, utmCampaign } = body;
 
     // Validate inputs
     if (!email || !name || !password) {
@@ -47,6 +47,9 @@ export async function POST(request) {
       email: trimmedEmail,
       name: trimmedName,
       passwordHash,
+      utmSource,
+      utmMedium,
+      utmCampaign,
     });
 
     if (!user) {
