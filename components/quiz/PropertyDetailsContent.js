@@ -84,7 +84,9 @@ export default function PropertyDetailsContent() {
     lat && lon
       ? `/api/streetview?lat=${lat}&lon=${lon}`
       : tier1Data.address
-        ? `/api/streetview?address=${encodeURIComponent(tier1Data.address)}`
+        ? `/api/streetview?address=${encodeURIComponent(
+            [tier1Data.address, tier1Data.city, tier1Data.state].filter(Boolean).join(", ")
+          )}`
         : null;
 
   // Parse Airbnb enrichment data from URL params

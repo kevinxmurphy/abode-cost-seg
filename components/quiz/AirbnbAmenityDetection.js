@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Sparkles,
   ChevronDown,
@@ -11,9 +11,11 @@ import {
   AlertCircle,
   HelpCircle,
   Image as ImageIcon,
+  ScanSearch,
 } from "lucide-react";
 import {
   buildRoomCards,
+  mergeVisionIntoRoomCards,
   getConfidenceInfo,
 } from "@/lib/airbnbImageAnalysis";
 
@@ -32,12 +34,51 @@ export default function AirbnbAmenityDetection({ airbnbEnrichment, airbnbImages 
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedCardId, setExpandedCardId] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [visionResults, setVisionResults] = useState(null);
+  const [visionLoading, setVisionLoading] = useState(false);
 
-  // Build room cards from images + enrichment data
-  const roomCards = useMemo(
+  // Build base room cards from caption-matching + enrichment data
+  const baseRoomCards = useMemo(
     () => buildRoomCards(airbnbImages, airbnbEnrichment),
     [airbnbImages, airbnbEnrichment]
   );
+
+  // Merge vision results into room cards when available
+  const roomCards = useMemo(
+    () => visionResults ? mergeVisionIntoRoomCards(baseRoomCards, visionResults) : baseRoomCards,
+    [baseRoomCards, visionResults]
+  );
+
+  // Fire Claude Vision analysis on mount (up to 8 images)
+  useEffect(() => {
+    if (!Array.isArray(airbnbImages) || airbnbImages.length === 0) return;
+
+    const imagesToAnalyze = airbnbImages
+      .filter((img) => img && img.imageUrl)
+      .slice(0, 8);
+
+    if (imagesToAnalyze.length === 0) return;
+
+    setVisionLoading(true);
+
+    fetch("/api/vision/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: imagesToAnalyze }),
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.success && Array.isArray(data.results)) {
+          setVisionResults(data.results);
+        }
+      })
+      .catch(() => {
+        // Vision is best-effort — caption-based detection still works
+      })
+      .finally(() => {
+        setVisionLoading(false);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // If no meaningful data, don't render
   if (!roomCards || roomCards.length === 0) return null;
@@ -77,6 +118,16 @@ export default function AirbnbAmenityDetection({ airbnbEnrichment, airbnbImages 
             <span className="airbnb-detection-meta">
               {roomCards.length} area{roomCards.length !== 1 ? "s" : ""} &middot;{" "}
               {totalAmenities} amenit{totalAmenities !== 1 ? "ies" : "y"} detected
+              {visionLoading && (
+                <span className="airbnb-detection-scanning">
+                  &middot; <ScanSearch size={11} style={{ display: "inline", verticalAlign: "middle" }} /> AI scanning photos…
+                </span>
+              )}
+              {!visionLoading && visionResults && (
+                <span className="airbnb-detection-scanned">
+                  &middot; AI-enhanced
+                </span>
+              )}
             </span>
           </div>
         </div>
@@ -104,8 +155,9 @@ export default function AirbnbAmenityDetection({ airbnbEnrichment, airbnbImages 
           <div className="airbnb-detection-disclaimer">
             <AlertCircle size={13} />
             <span>
-              Amenity detection is AI-assisted and should be verified.
-              Review each category in the walkthrough below for accuracy.
+              {visionResults
+                ? "AI image analysis complete. Detections should be reviewed — confirm or adjust in the walkthrough below."
+                : "Amenity detection is AI-assisted and should be verified. Review each category in the walkthrough below for accuracy."}
             </span>
           </div>
         </div>
