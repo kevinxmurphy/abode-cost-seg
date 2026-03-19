@@ -17,7 +17,6 @@ import {
   Zap,
   Lock,
   ShieldCheck,
-  Phone,
   CheckCircle,
 } from "lucide-react";
 import { captureEmail } from "@/lib/stubs";
@@ -111,8 +110,6 @@ export default function QuizResults() {
   const [revealed, setRevealed] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [smsConsent, setSmsConsent] = useState(false);
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -169,12 +166,14 @@ export default function QuizResults() {
       100
   );
 
-  // Street view URL
+  // Street view URL — prefer lat/lon; fallback to full address (street + city + state)
   const streetViewUrl =
     answers.lat && answers.lon
       ? `/api/streetview?lat=${answers.lat}&lon=${answers.lon}`
       : answers.address
-        ? `/api/streetview?address=${encodeURIComponent(answers.address)}`
+        ? `/api/streetview?address=${encodeURIComponent(
+            [answers.address, answers.city, answers.state].filter(Boolean).join(", ")
+          )}`
         : null;
 
   // Build URL for Tier 2 detailed walkthrough
@@ -314,10 +313,7 @@ export default function QuizResults() {
     e.preventDefault();
     if (!email) return;
     captureEmail(email);
-    // STUB: Also capture phone if provided
-    if (phone) console.log("Phone captured (stub):", phone, "SMS consent:", smsConsent);
     setUnlocked(true);
-    // Save property to local store keyed by email
     saveProperty(email, {
       answers,
       airbnb: hasAirbnb ? airbnb : null,
@@ -539,60 +535,39 @@ export default function QuizResults() {
               <div className="results-gate-card" ref={gateRef}>
                 <div className="results-gate-hook">
                   <h3 className="results-gate-title">
-                    Your estimate is ready — now let&apos;s sharpen it
+                    {hasAirbnb
+                      ? `See exactly what's driving your $${estimate.firstYearDeduction.toLocaleString()} estimate`
+                      : "Unlock your full component-level breakdown"}
                   </h3>
                   <p className="results-gate-subtitle">
-                    This is a range. Your actual deduction depends on your property&apos;s specific features. Continue for your full component-level breakdown — 2 minutes, no credit card needed.
+                    {hasAirbnb
+                      ? `We found your listing. Now see how your specific amenities — pool, appliances, outdoor areas — break down into exact depreciation schedules.`
+                      : "Kitchen, bathrooms, outdoor areas, appliances — with exact asset allocations and bonus depreciation. Free, no credit card needed."}
                   </p>
                 </div>
 
-                {/* Trust badges */}
-                <div className="results-gate-trust">
-                  {[
-                    { icon: <ShieldCheck size={14} />, text: "No credit card required" },
-                    { icon: <Clock size={14} />, text: "Takes 10 seconds" },
-                    { icon: <CheckCircle size={14} />, text: "90-day guarantee" },
-                  ].map(({ icon, text }) => (
-                    <span key={text} className="results-gate-badge">
-                      {icon} {text}
-                    </span>
-                  ))}
-                </div>
+                {/* Primary CTA — Google */}
+                <button
+                  className="btn btn-google btn-lg"
+                  style={{ width: "100%", marginBottom: "var(--space-2)" }}
+                  onClick={() => {
+                    if (window.google?.accounts?.id) {
+                      window.google.accounts.id.prompt();
+                    }
+                  }}
+                  disabled={authLoading}
+                >
+                  <svg width="18" height="18" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  </svg>
+                  {authLoading ? "Signing in…" : "Continue with Google"}
+                </button>
 
-                {/* Google Sign-In — Primary CTA */}
-                <div
-                  ref={googleBtnRef}
-                  style={{ width: "100%", marginBottom: "var(--space-2)", display: "flex", justifyContent: "center" }}
-                />
-
-                {/* Fallback Google button */}
-                {!authLoading && !googleBtnRef.current?.querySelector("iframe") && (
-                  <button
-                    className="btn btn-google btn-lg"
-                    style={{ width: "100%", marginBottom: "var(--space-2)" }}
-                    onClick={() => {
-                      if (window.google?.accounts?.id) {
-                        window.google.accounts.id.prompt();
-                      } else {
-                        setUnlocked(true);
-                      }
-                    }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 48 48">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg>
-                    Continue with Google
-                  </button>
-                )}
-
-                {authLoading && (
-                  <div style={{ textAlign: "center", padding: "var(--space-2)", color: "var(--dust)" }}>
-                    Signing in...
-                  </div>
-                )}
+                {/* Hidden GIS renderer — Google initializes the real button here */}
+                <div ref={googleBtnRef} style={{ display: "none" }} />
 
                 {authError && (
                   <div style={{ textAlign: "center", padding: "var(--space-1)", color: "#d93025", fontSize: "13px" }}>
@@ -602,10 +577,10 @@ export default function QuizResults() {
 
                 {/* Divider */}
                 <div className="results-gate-divider">
-                  <span>or continue with email</span>
+                  <span>or use email</span>
                 </div>
 
-                {/* Email + Phone form */}
+                {/* Email-only form — minimal friction */}
                 <form onSubmit={handleEmailSubmit} className="results-gate-form">
                   <input
                     type="email"
@@ -615,37 +590,31 @@ export default function QuizResults() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
-                  <div className="results-gate-phone-row">
-                    <Phone size={16} style={{ color: "var(--dust)", flexShrink: 0 }} />
-                    <input
-                      type="tel"
-                      className="input"
-                      placeholder="(555) 555-5555 (optional)"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      style={{ flex: 1 }}
-                    />
-                  </div>
-                  <label className="results-gate-sms-consent">
-                    <input
-                      type="checkbox"
-                      checked={smsConsent}
-                      onChange={(e) => setSmsConsent(e.target.checked)}
-                    />
-                    <span>By providing your phone number, you consent to receive SMS messages about your cost segregation estimate. Message frequency varies. Msg & data rates may apply. Reply STOP to unsubscribe.</span>
-                  </label>
                   <button type="submit" className="btn btn-primary btn-lg" style={{ width: "100%" }}>
-                    Continue &amp; Get My Breakdown
+                    Get My Full Breakdown
                     <ArrowRight size={18} />
                   </button>
-                  <p className="results-gate-legal">
-                    By continuing, you agree to our{" "}
-                    <Link href="/privacy" style={{ color: "var(--turq)", textDecoration: "underline" }}>
-                      Privacy Policy
-                    </Link>.
-                    We&apos;ll save your estimate and may send occasional product updates. Unsubscribe anytime.
-                  </p>
                 </form>
+
+                {/* Trust strip */}
+                <div className="results-gate-trust" style={{ marginTop: "var(--space-3)" }}>
+                  {[
+                    { icon: <ShieldCheck size={13} />, text: "No credit card" },
+                    { icon: <Clock size={13} />, text: "10 seconds" },
+                    { icon: <CheckCircle size={13} />, text: "90-day guarantee" },
+                  ].map(({ icon, text }) => (
+                    <span key={text} className="results-gate-badge">
+                      {icon} {text}
+                    </span>
+                  ))}
+                </div>
+
+                <p className="results-gate-legal">
+                  By continuing, you agree to our{" "}
+                  <Link href="/privacy" style={{ color: "var(--turq)", textDecoration: "underline" }}>
+                    Privacy Policy
+                  </Link>.
+                </p>
               </div>
             </>
           ) : (
