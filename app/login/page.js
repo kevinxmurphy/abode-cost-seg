@@ -2,23 +2,50 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/app/dashboard";
+
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [mounted, setMounted] = useState(false);
   const [gisRendered, setGisRendered] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const googleBtnRef = useRef(null);
 
   useEffect(() => setMounted(true), []);
 
-  function handleSubmit(e) {
+  // ─── Email/password login ───
+  async function handleSubmit(e) {
     e.preventDefault();
-    // STUB: Email/password auth — always redirects to dashboard
-    router.push("/app/dashboard");
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        router.push(redirect);
+      } else {
+        setAuthError(data.error || "Sign-in failed. Please try again.");
+      }
+    } catch {
+      setAuthError("Network error. Please try again.");
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   // ─── Google Sign-In callback ───
@@ -38,7 +65,7 @@ export default function LoginPage() {
         });
         const data = await res.json();
         if (data.success && data.user) {
-          router.push("/app/dashboard");
+          router.push(redirect);
         } else {
           setAuthError(data.error || "Sign-in failed. Please try again.");
         }
@@ -48,7 +75,7 @@ export default function LoginPage() {
         setAuthLoading(false);
       }
     },
-    [router]
+    [router, redirect]
   );
 
   // ─── Initialize Google Identity Services ───
@@ -130,30 +157,27 @@ export default function LoginPage() {
             Welcome back
           </h1>
 
-          {/* Google Sign-In — Real GIS button */}
+          {/* Google Sign-In */}
           <div
             ref={googleBtnRef}
             style={{ marginBottom: "var(--space-2)", minHeight: 44 }}
           />
 
-          {/* Fallback Google button if GIS hasn't rendered */}
           {mounted && !authLoading && !gisRendered && (
-              <button
-                className="btn btn-outline"
-                style={{ width: "100%", marginBottom: "var(--space-2)" }}
-                onClick={() => {
-                  if (window.google?.accounts?.id) {
-                    window.google.accounts.id.prompt();
-                  } else {
-                    setAuthError(
-                      "Google Sign-In is loading. Please try again in a moment."
-                    );
-                  }
-                }}
-              >
-                Sign in with Google
-              </button>
-            )}
+            <button
+              className="btn btn-outline"
+              style={{ width: "100%", marginBottom: "var(--space-2)" }}
+              onClick={() => {
+                if (window.google?.accounts?.id) {
+                  window.google.accounts.id.prompt();
+                } else {
+                  setAuthError("Google Sign-In is loading. Please try again in a moment.");
+                }
+              }}
+            >
+              Sign in with Google
+            </button>
+          )}
 
           {authLoading && (
             <div
@@ -187,13 +211,15 @@ export default function LoginPage() {
 
           <div
             style={{
-              textAlign: "center",
-              margin: "var(--space-2) 0",
-              fontSize: "12px",
-              color: "var(--dust)",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              margin: "var(--space-3) 0",
             }}
           >
-            or
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <span style={{ fontSize: "12px", color: "var(--dust)" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -203,33 +229,61 @@ export default function LoginPage() {
                 className="input"
                 type="email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
               />
             </div>
             <div className="field">
-              <label className="label">Password</label>
-              <input
-                className="input"
-                type="password"
-                placeholder="••••••••"
-              />
+              <label className="label" style={{ display: "flex", justifyContent: "space-between" }}>
+                Password
+                <Link href="/forgot-password" style={{ fontSize: "12px", color: "var(--turq)", fontWeight: 400 }}>
+                  Forgot?
+                </Link>
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  className="input"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  style={{ paddingRight: "40px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--dust)",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: 0,
+                  }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
               className="btn btn-primary"
               style={{ width: "100%" }}
+              disabled={authLoading}
             >
               Log in
             </button>
           </form>
-
-          <div style={{ textAlign: "center", marginTop: "var(--space-3)" }}>
-            <Link
-              href="/forgot-password"
-              style={{ fontSize: "13px", color: "var(--turq)" }}
-            >
-              Forgot password?
-            </Link>
-          </div>
         </div>
 
         <p
@@ -241,10 +295,7 @@ export default function LoginPage() {
           }}
         >
           Don&apos;t have an account?{" "}
-          <Link
-            href="/signup"
-            style={{ color: "var(--turq)", fontWeight: 500 }}
-          >
+          <Link href="/signup" style={{ color: "var(--turq)", fontWeight: 500 }}>
             Sign up
           </Link>
         </p>

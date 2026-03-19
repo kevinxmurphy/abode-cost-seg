@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -12,15 +12,46 @@ export default function SignupPage() {
   const [authError, setAuthError] = useState("");
   const [mounted, setMounted] = useState(false);
   const [gisRendered, setGisRendered] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const googleBtnRef = useRef(null);
 
   useEffect(() => setMounted(true), []);
 
-  function handleSubmit(e) {
+  // ─── Email/password signup ───
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!agreed) return;
-    // STUB: Email/password auth — always redirects to dashboard
-    router.push("/app/dashboard");
+
+    if (password.length < 8) {
+      setAuthError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, password }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        router.push("/app/dashboard");
+      } else {
+        setAuthError(data.error || "Sign-up failed. Please try again.");
+      }
+    } catch {
+      setAuthError("Network error. Please try again.");
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   // ─── Google Sign-In callback ───
@@ -136,7 +167,7 @@ export default function SignupPage() {
             Create your account
           </h1>
 
-          {/* Terms & Privacy consent — shown above Google button */}
+          {/* Terms & Privacy consent */}
           <div
             style={{
               display: "flex",
@@ -161,35 +192,22 @@ export default function SignupPage() {
             />
             <label
               htmlFor="terms-consent"
-              style={{
-                fontSize: "12px",
-                lineHeight: 1.5,
-                color: "var(--dust)",
-                cursor: "pointer",
-              }}
+              style={{ fontSize: "12px", lineHeight: 1.5, color: "var(--dust)", cursor: "pointer" }}
             >
               I agree to the{" "}
-              <Link
-                href="/terms"
-                style={{ color: "var(--turq)", textDecoration: "underline" }}
-                target="_blank"
-              >
+              <Link href="/terms" style={{ color: "var(--turq)", textDecoration: "underline" }} target="_blank">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link
-                href="/privacy"
-                style={{ color: "var(--turq)", textDecoration: "underline" }}
-                target="_blank"
-              >
+              <Link href="/privacy" style={{ color: "var(--turq)", textDecoration: "underline" }} target="_blank">
                 Privacy Policy
               </Link>
-              . I understand that Abode provides informational reports only and
-              does not provide tax, legal, or financial advice.
+              . I understand that Abode provides informational reports only and does not provide tax,
+              legal, or financial advice.
             </label>
           </div>
 
-          {/* Google Sign-In — Real GIS button */}
+          {/* Google Sign-In */}
           <div
             ref={googleBtnRef}
             style={{
@@ -201,34 +219,31 @@ export default function SignupPage() {
             }}
           />
 
-          {/* Fallback Google button if GIS hasn't rendered */}
           {mounted && !authLoading && !gisRendered && (
-              <button
-                className="btn btn-outline"
-                style={{
-                  width: "100%",
-                  marginBottom: "var(--space-2)",
-                  opacity: agreed ? 1 : 0.5,
-                  cursor: agreed ? "pointer" : "not-allowed",
-                }}
-                disabled={!agreed}
-                onClick={() => {
-                  if (!agreed) {
-                    setAuthError("Please agree to the Terms of Service first.");
-                    return;
-                  }
-                  if (window.google?.accounts?.id) {
-                    window.google.accounts.id.prompt();
-                  } else {
-                    setAuthError(
-                      "Google Sign-In is loading. Please try again in a moment."
-                    );
-                  }
-                }}
-              >
-                Continue with Google
-              </button>
-            )}
+            <button
+              className="btn btn-outline"
+              style={{
+                width: "100%",
+                marginBottom: "var(--space-2)",
+                opacity: agreed ? 1 : 0.5,
+                cursor: agreed ? "pointer" : "not-allowed",
+              }}
+              disabled={!agreed}
+              onClick={() => {
+                if (!agreed) {
+                  setAuthError("Please agree to the Terms of Service first.");
+                  return;
+                }
+                if (window.google?.accounts?.id) {
+                  window.google.accounts.id.prompt();
+                } else {
+                  setAuthError("Google Sign-In is loading. Please try again in a moment.");
+                }
+              }}
+            >
+              Continue with Google
+            </button>
+          )}
 
           {authLoading && (
             <div
@@ -262,19 +277,28 @@ export default function SignupPage() {
 
           <div
             style={{
-              textAlign: "center",
-              margin: "var(--space-2) 0",
-              fontSize: "12px",
-              color: "var(--dust)",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              margin: "var(--space-3) 0",
             }}
           >
-            or
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <span style={{ fontSize: "12px", color: "var(--dust)" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="field">
               <label className="label">Full Name</label>
-              <input className="input" placeholder="Kevin" required />
+              <input
+                className="input"
+                placeholder="Kevin Murphy"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+              />
             </div>
             <div className="field">
               <label className="label">Email</label>
@@ -282,17 +306,46 @@ export default function SignupPage() {
                 className="input"
                 type="email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
             </div>
             <div className="field">
               <label className="label">Password</label>
-              <input
-                className="input"
-                type="password"
-                placeholder="8+ characters"
-                required
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  className="input"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="8+ characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  style={{ paddingRight: "40px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--dust)",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: 0,
+                  }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -303,7 +356,7 @@ export default function SignupPage() {
                 opacity: agreed ? 1 : 0.5,
                 cursor: agreed ? "pointer" : "not-allowed",
               }}
-              disabled={!agreed}
+              disabled={!agreed || authLoading}
             >
               Create Account
             </button>
@@ -319,11 +372,7 @@ export default function SignupPage() {
             }}
           >
             By creating an account, you also agree to our{" "}
-            <Link
-              href="/disclaimers"
-              style={{ color: "var(--turq)" }}
-              target="_blank"
-            >
+            <Link href="/disclaimers" style={{ color: "var(--turq)" }} target="_blank">
               Disclaimers
             </Link>
             . We do not sell your personal information.
@@ -339,10 +388,7 @@ export default function SignupPage() {
           }}
         >
           Already have an account?{" "}
-          <Link
-            href="/login"
-            style={{ color: "var(--turq)", fontWeight: 500 }}
-          >
+          <Link href="/login" style={{ color: "var(--turq)", fontWeight: 500 }}>
             Log in
           </Link>
         </p>
