@@ -244,8 +244,8 @@ function PropertyCard({ property }) {
 
   // Determine link
   let href = `/app/properties/${property.id}`;
-  if (property.detailsUrl) {
-    href = property.detailsUrl;
+  if (property.detailsUrl || property.details_url) {
+    href = property.detailsUrl || property.details_url;
   } else if (property.studyId) {
     href = `/app/studies/${property.studyId}`;
   }
