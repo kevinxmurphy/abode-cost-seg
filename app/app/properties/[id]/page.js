@@ -308,7 +308,7 @@ function EstimateView({ property, estimate, price, yearBuilt, sqft, beds, baths,
               Refine your estimate by confirming property details, then order a full IRS-grade cost seg study.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href="/quiz" className="btn btn-subtle btn-sm">
+              <Link href={property.details_url || "/quiz"} className="btn btn-subtle btn-sm">
                 <ChevronRight size={14} />
                 Refine Estimate
               </Link>
