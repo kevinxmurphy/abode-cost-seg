@@ -3,20 +3,13 @@ import NavBar from "@/components/ui/NavBar";
 import Footer from "@/components/ui/Footer";
 import BlogListingContent from "@/components/blog/BlogListingContent";
 
-export const metadata = {
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata({
   title: "Learn — Cost Segregation Education for STR Investors | Abode",
-  description:
-    "Expert guides on cost segregation, bonus depreciation, STR tax strategy, and IRS compliance. Learn how to maximize your rental property deductions.",
-  openGraph: {
-    title: "Learn — Cost Segregation Education | Abode",
-    description:
-      "Expert guides on cost segregation, bonus depreciation, and STR tax strategy.",
-    url: "https://www.abodecostseg.com/learn",
-  },
-  alternates: {
-    canonical: "https://www.abodecostseg.com/learn",
-  },
-};
+  description: "Expert guides on cost segregation, bonus depreciation, STR tax strategy, and IRS compliance. Learn how to maximize your rental property deductions.",
+  path: "/learn",
+});
 
 export default function LearnPage() {
   return (
