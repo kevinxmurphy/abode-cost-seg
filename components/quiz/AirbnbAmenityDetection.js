@@ -88,13 +88,13 @@ export default function AirbnbAmenityDetection({ airbnbEnrichment, airbnbImages 
     }));
   }, [baseRoomCards, visionResults, cardUploads]);
 
-  // Fire Claude Vision analysis on mount (up to 8 images)
+  // Fire Claude Vision analysis on mount (up to 20 images)
   useEffect(() => {
     if (!Array.isArray(airbnbImages) || airbnbImages.length === 0) return;
 
     const imagesToAnalyze = airbnbImages
       .filter((img) => img && img.imageUrl)
-      .slice(0, 8);
+      .slice(0, 20);
 
     if (imagesToAnalyze.length === 0) return;
 
