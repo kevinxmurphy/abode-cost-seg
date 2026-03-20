@@ -18,11 +18,14 @@ import {
   Lock,
   ShieldCheck,
   CheckCircle,
+  Pencil,
+  X,
 } from "lucide-react";
 import { captureEmail } from "@/lib/stubs";
 import { useCountUp } from "@/lib/useCountUp";
 import { saveProperty } from "@/lib/propertyStore";
 import { getStateConformity } from "@/lib/stateConformity";
+import { getLandRatioSource, isHighCOLMarket } from "@/lib/landSplit";
 import { trackResultsViewed, trackGateShown, trackGateConverted, trackEmailCaptured, trackCheckoutInitiated, identify } from "@/lib/analytics";
 
 // Bonus depreciation rates by purchase year
@@ -120,6 +123,13 @@ export default function QuizResults() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [confidenceMode, setConfidenceMode] = useState("standard");
+  const [landOverride, setLandOverride] = useState(null); // null = use default
+  const [showLandModal, setShowLandModal] = useState(false);
+  const [landModalOption, setLandModalOption] = useState("default"); // "default" | "assessor" | "custom"
+  const [landModalAssessedLand, setLandModalAssessedLand] = useState("");
+  const [landModalAssessedImprovement, setLandModalAssessedImprovement] = useState("");
+  const [landModalCustomValue, setLandModalCustomValue] = useState("");
+  const [highCOLDismissed, setHighCOLDismissed] = useState(false);
   const googleBtnRef = useRef(null);
   const gateRef = useRef(null);
 
@@ -143,6 +153,7 @@ export default function QuizResults() {
     lastSoldDate: searchParams.get("lastSoldDate") || "",
     lat: searchParams.get("lat") || "",
     lon: searchParams.get("lon") || "",
+    ...(landOverride ? { landValueOverride: landOverride } : {}),
   };
 
   // Airbnb data (if user imported via URL)
@@ -172,6 +183,17 @@ export default function QuizResults() {
       estimate.standardAnnualDeduction) *
       100
   );
+
+  // Land value context (computed after estimate)
+  const landRatioSourceLabel = landOverride
+    ? "Your estimate"
+    : answers.assessedLand > 0
+      ? "County assessor"
+      : getLandRatioSource(answers.state, answers.city);
+  const computedLandValue = Math.round(answers.purchasePrice * estimate.landRatio / 100);
+  const computedDepreciableBasis = answers.purchasePrice - computedLandValue;
+  const showHighCOLBanner = !highCOLDismissed && !landOverride && isHighCOLMarket(answers.state, answers.city);
+  const landRatioWarning = estimate.landRatio > 55 ? "high" : estimate.landRatio < 10 ? "low" : null;
 
   // Street view URL — prefer lat/lon; fallback to full address (street + city + state)
   const streetViewUrl =
@@ -215,6 +237,7 @@ export default function QuizResults() {
     if (airbnb.enrichment) detailParams.set("airbnbEnrichment", airbnb.enrichment);
     if (airbnb.images) detailParams.set("airbnbImages", airbnb.images);
   }
+  if (landOverride) detailParams.set("landValueOverride", String(landOverride));
   const detailsUrl = `/quiz/details?${detailParams.toString()}`;
 
   // ─── Analytics ────────────────────────────────────────────────────────────
@@ -812,6 +835,255 @@ export default function QuizResults() {
                       missed depreciation in a single year via IRS Form 3115. No amended
                       returns needed.
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ HIGH-COL MARKET BANNER ═══ */}
+              {showHighCOLBanner && (
+                <div style={{
+                  padding: "12px 16px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid #d97706",
+                  background: "#fffbeb",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  color: "#92400e",
+                  marginBottom: "var(--space-3)",
+                  position: "relative",
+                }}>
+                  <button
+                    onClick={() => setHighCOLDismissed(true)}
+                    style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#92400e", padding: 4 }}
+                    aria-label="Dismiss"
+                  >
+                    <X size={14} />
+                  </button>
+                  <strong style={{ display: "block", marginBottom: 4 }}>Land value may be higher than typical</strong>
+                  Properties in {answers.city ? `${answers.city}, ${answers.state}` : answers.state} typically have higher land values ({estimate.landRatio}% avg).
+                  If you have a recent appraisal or county assessment showing a different split, you can adjust this below for a more accurate estimate.
+                </div>
+              )}
+
+              {/* ═══ LAND VALUE CARD ═══ */}
+              <div className="results-recap-card" style={{ marginBottom: "var(--space-3)" }}>
+                <div className="ui-label" style={{ marginBottom: "var(--space-2)" }}>
+                  Land / Improvement Split
+                </div>
+                <div className="results-recap-grid">
+                  <InfoRow
+                    icon={<DollarSign size={13} />}
+                    label="Purchase Price"
+                    value={`$${answers.purchasePrice.toLocaleString()}`}
+                  />
+                  <span className="results-recap-label">
+                    <span style={{ marginRight: 4, display: "inline-flex", verticalAlign: "middle" }}><Ruler size={13} /></span>
+                    Land Value
+                  </span>
+                  <span className="results-recap-value" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    ${computedLandValue.toLocaleString()} ({estimate.landRatio}%)
+                    <button
+                      onClick={() => {
+                        setLandModalOption(landOverride ? "custom" : "default");
+                        if (landOverride) setLandModalCustomValue(String(landOverride));
+                        if (answers.assessedLand > 0) {
+                          setLandModalAssessedLand(String(answers.assessedLand));
+                          setLandModalAssessedImprovement(String(answers.assessedImprovement));
+                        }
+                        setShowLandModal(true);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--turq)",
+                        padding: 2,
+                        display: "inline-flex",
+                        alignItems: "center",
+                      }}
+                      aria-label="Edit land value"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  </span>
+                  <InfoRow
+                    icon={<TrendingUp size={13} />}
+                    label="Depreciable Basis"
+                    value={`$${computedDepreciableBasis.toLocaleString()}`}
+                  />
+                </div>
+                <div style={{ marginTop: 8, fontSize: 11, color: "var(--dust)" }}>
+                  Source: {landRatioSourceLabel}
+                </div>
+                {landRatioWarning && (
+                  <div style={{
+                    marginTop: 8,
+                    fontSize: 12,
+                    color: "#92400e",
+                    background: "#fffbeb",
+                    padding: "6px 10px",
+                    borderRadius: "var(--radius-sm)",
+                  }}>
+                    {landRatioWarning === "high"
+                      ? "Land ratios above 55% are unusual and reduce your depreciable basis significantly. Double-check with your CPA or county assessor."
+                      : "Land ratios below 10% are unusual. Verify this with your county assessor or a recent appraisal."}
+                  </div>
+                )}
+              </div>
+
+              {/* ═══ LAND VALUE EDIT MODAL ═══ */}
+              {showLandModal && (
+                <div
+                  style={{
+                    position: "fixed",
+                    inset: 0,
+                    zIndex: 10000,
+                    background: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "var(--space-3)",
+                  }}
+                  onClick={(e) => { if (e.target === e.currentTarget) setShowLandModal(false); }}
+                >
+                  <div style={{
+                    background: "#fff",
+                    borderRadius: "var(--radius-lg)",
+                    padding: "var(--space-4)",
+                    maxWidth: 440,
+                    width: "100%",
+                    maxHeight: "90vh",
+                    overflow: "auto",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", margin: 0 }}>Adjust Land Value</h3>
+                      <button onClick={() => setShowLandModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--dust)", padding: 4 }}>
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      {/* Option 1: Default */}
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 14 }}>
+                        <input type="radio" name="landOption" checked={landModalOption === "default"} onChange={() => setLandModalOption("default")} style={{ marginTop: 3 }} />
+                        <div>
+                          <div style={{ fontWeight: 500, color: "var(--ink)" }}>
+                            Use Abode estimate ({getLandRatioSource(answers.state, answers.city)})
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--dust)", marginTop: 2 }}>
+                            Based on market data for your area
+                          </div>
+                        </div>
+                      </label>
+
+                      {/* Option 2: County assessor */}
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 14 }}>
+                        <input type="radio" name="landOption" checked={landModalOption === "assessor"} onChange={() => setLandModalOption("assessor")} style={{ marginTop: 3 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 500, color: "var(--ink)" }}>Use county assessor ratio</div>
+                          {landModalOption === "assessor" && (
+                            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: 11, color: "var(--dust)", display: "block", marginBottom: 2 }}>Land assessed</label>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={landModalAssessedLand}
+                                  onChange={(e) => setLandModalAssessedLand(e.target.value.replace(/[^\d]/g, ""))}
+                                  placeholder="$0"
+                                  className="quiz-input"
+                                  style={{ width: "100%", padding: "6px 10px", fontSize: 14 }}
+                                />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: 11, color: "var(--dust)", display: "block", marginBottom: 2 }}>Improvement</label>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={landModalAssessedImprovement}
+                                  onChange={(e) => setLandModalAssessedImprovement(e.target.value.replace(/[^\d]/g, ""))}
+                                  placeholder="$0"
+                                  className="quiz-input"
+                                  style={{ width: "100%", padding: "6px 10px", fontSize: 14 }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+
+                      {/* Option 3: Custom */}
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 14 }}>
+                        <input type="radio" name="landOption" checked={landModalOption === "custom"} onChange={() => setLandModalOption("custom")} style={{ marginTop: 3 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 500, color: "var(--ink)" }}>Enter custom land value</div>
+                          {landModalOption === "custom" && (
+                            <div style={{ marginTop: 8 }}>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={landModalCustomValue}
+                                onChange={(e) => setLandModalCustomValue(e.target.value.replace(/[^\d]/g, ""))}
+                                placeholder="$0"
+                                className="quiz-input"
+                                style={{ width: "100%", padding: "6px 10px", fontSize: 14 }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Warning for extreme ratios */}
+                    {(() => {
+                      let previewRatio = null;
+                      if (landModalOption === "assessor" && landModalAssessedLand && landModalAssessedImprovement) {
+                        const total = parseInt(landModalAssessedLand) + parseInt(landModalAssessedImprovement);
+                        if (total > 0) previewRatio = parseInt(landModalAssessedLand) / total;
+                      } else if (landModalOption === "custom" && landModalCustomValue) {
+                        previewRatio = parseInt(landModalCustomValue) / answers.purchasePrice;
+                      }
+                      if (previewRatio && (previewRatio > 0.55 || previewRatio < 0.10)) {
+                        return (
+                          <div style={{
+                            marginTop: "var(--space-3)",
+                            fontSize: 12,
+                            color: "#92400e",
+                            background: "#fffbeb",
+                            padding: "8px 12px",
+                            borderRadius: "var(--radius-sm)",
+                            lineHeight: 1.5,
+                          }}>
+                            Land ratios {previewRatio > 0.55 ? "above 55%" : "below 10%"} are unusual. Double-check with your CPA.
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: "100%", marginTop: "var(--space-3)" }}
+                      onClick={() => {
+                        if (landModalOption === "default") {
+                          setLandOverride(null);
+                        } else if (landModalOption === "assessor") {
+                          const land = parseInt(landModalAssessedLand) || 0;
+                          const improvement = parseInt(landModalAssessedImprovement) || 0;
+                          const total = land + improvement;
+                          if (total > 0) {
+                            const ratio = land / total;
+                            setLandOverride(Math.round(answers.purchasePrice * ratio));
+                          }
+                        } else if (landModalOption === "custom") {
+                          const val = parseInt(landModalCustomValue) || 0;
+                          if (val > 0) setLandOverride(val);
+                        }
+                        setShowLandModal(false);
+                      }}
+                    >
+                      Update Estimate
+                    </button>
                   </div>
                 </div>
               )}
