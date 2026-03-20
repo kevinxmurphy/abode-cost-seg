@@ -9,6 +9,8 @@ import { getServerClient } from "@/lib/supabase";
 import { getUserByEmail } from "@/lib/db/users";
 import log from "@/lib/logger";
 
+export const dynamic = "force-dynamic"
+
 export async function GET(request) {
   const session = getSession(request);
   if (!session) {
