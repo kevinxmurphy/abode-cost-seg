@@ -26,10 +26,10 @@ function derivePurchaseYear(dateStr) {
   return "2022-earlier";
 }
 
-export default function QuizShell() {
+export default function QuizShell({ initialAnswers = {}, initialAirbnbJob = null }) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState(initialAnswers);
   const [direction, setDirection] = useState("forward");
   const [disqualified, setDisqualified] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -37,12 +37,11 @@ export default function QuizShell() {
   // Track quiz start on mount
   useEffect(() => { trackQuizStarted(); }, []);
 
-  // Background Airbnb job — owned here so it persists across steps
-  const [airbnbJob, setAirbnbJob] = useState({
-    runId: null,
-    status: "idle", // "idle" | "starting" | "running" | "done" | "failed"
-    listing: null,
-  });
+  // Background Airbnb job — owned here so it persists across steps.
+  // Restored from saved property when available (status "done" prevents re-fetch).
+  const [airbnbJob, setAirbnbJob] = useState(
+    initialAirbnbJob || { runId: null, status: "idle", listing: null }
+  );
 
   // Build the active steps list by filtering out conditional steps
   const isAirbnbUser = answers.propertyUse === "str" || answers.propertyUse === "mtr";
