@@ -37,6 +37,8 @@ SMART HOME: keypad-locks, security-cameras, smart-thermostat, whole-home-audio s
 
 SPECIALTY: game-room, home-gym, wine-cellar, sauna, bunk-room
 
+FURNITURE & PERSONAL PROPERTY: furniture quality (luxury = Restoration Hardware/custom/designer, premium = Pottery Barn/West Elm, mid = Wayfair/Ashley, budget = IKEA/basic), patio-furniture (teak, aluminum, resin-wicker, none), electronics (large-tv, gaming-setup, projector), small-appliances (espresso-machine, specialty-cooking, high-end-blender), outdoor-entertaining (fire-table, pizza-oven, outdoor-heater, portable-grill), activity-gear (bikes, kayaks, paddleboards, beach-gear)
+
 Respond ONLY with valid JSON. No markdown, no explanation.`;
 
 const USER_PROMPT = `Analyze this property photo. Return a JSON object with:

@@ -30,6 +30,7 @@ const REASSIGN_CATEGORIES = [
   { id: "bedroom", label: "Bedroom" },
   { id: "outdoor", label: "Outdoor / Pool" },
   { id: "living", label: "Living Area" },
+  { id: "furniture", label: "Furniture / Personal Property" },
   { id: "general", label: "General / Other" },
 ];
 
