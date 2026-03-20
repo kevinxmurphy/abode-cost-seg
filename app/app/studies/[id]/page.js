@@ -687,30 +687,78 @@ function ReconciliationBadge({ rec }) {
 
 // ─── Downloads Card ──────────────────────────────────────────────────
 
+/**
+ * Assembles report data from raw generateStudy() output for CSV/PDF export.
+ * Only called when the study data doesn't already have exhibitE/exhibitC (i.e., not from assembleReport).
+ */
+async function assembleReportData(studyData) {
+  const { assembleReport } = await import("@/lib/reportAssembler");
+  return assembleReport(studyData);
+}
+
 function DownloadsCard({ studyId, metaId, study }) {
-  const handlePDF = useCallback(() => {
-    window.open(`/api/study/pdf?id=${studyId}`, "_blank");
-  }, [studyId]);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handlePDF = useCallback(async () => {
+    // Try the API route first (works when study is in Supabase)
+    try {
+      const testRes = await fetch(`/api/study/pdf?id=${studyId}`, { method: "HEAD" });
+      if (testRes.ok || testRes.status === 200) {
+        window.open(`/api/study/pdf?id=${studyId}`, "_blank");
+        return;
+      }
+    } catch {}
+
+    // Fallback: generate PDF client-side via POST
+    setPdfLoading(true);
+    try {
+      const reportData = study.exhibitE ? study : await assembleReportData(study);
+      const res = await fetch("/api/study/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ report_data: reportData, preview: false }),
+      });
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Abode_Cost_Seg_Study_${metaId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[StudyViewer] PDF download error:", err);
+      alert("Unable to generate PDF. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [studyId, study, metaId]);
 
   const handleDepreciationCSV = useCallback(async () => {
     try {
-      const { generateDepreciationCSV } = await import("@/lib/csvExporter");
-      generateDepreciationCSV(study);
-    } catch {
-      // Fallback: open API route
-      window.open(`/api/study/csv?id=${studyId}&type=depreciation`, "_blank");
+      const { generateDepreciationCSV, downloadCSV } = await import("@/lib/csvExporter");
+      const reportData = study.exhibitE ? study : await assembleReportData(study);
+      const csv = generateDepreciationCSV(reportData);
+      downloadCSV(csv, `Abode_Depreciation_Schedule_${metaId}.csv`);
+    } catch (err) {
+      console.error("[StudyViewer] CSV export error:", err);
+      alert("Unable to export CSV. Please try again.");
     }
-  }, [study, studyId]);
+  }, [study, metaId]);
 
   const handleComponentCSV = useCallback(async () => {
     try {
-      const { generateComponentCSV } = await import("@/lib/csvExporter");
-      generateComponentCSV(study);
-    } catch {
-      // Fallback: open API route
-      window.open(`/api/study/csv?id=${studyId}&type=components`, "_blank");
+      const { generateComponentCSV, downloadCSV } = await import("@/lib/csvExporter");
+      const reportData = study.exhibitC ? study : await assembleReportData(study);
+      const csv = generateComponentCSV(reportData);
+      downloadCSV(csv, `Abode_Component_Register_${metaId}.csv`);
+    } catch (err) {
+      console.error("[StudyViewer] CSV export error:", err);
+      alert("Unable to export CSV. Please try again.");
     }
-  }, [study, studyId]);
+  }, [study, metaId]);
 
   return (
     <div className="card" style={{ padding: "var(--space-4)" }}>
@@ -718,9 +766,9 @@ function DownloadsCard({ studyId, metaId, study }) {
         Downloads
       </div>
       <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-        <button className="btn btn-primary" onClick={handlePDF}>
-          <FileText size={16} />
-          Download PDF Report
+        <button className="btn btn-primary" onClick={handlePDF} disabled={pdfLoading}>
+          {pdfLoading ? <Loader2 size={16} style={{ animation: "spin 1.2s linear infinite" }} /> : <FileText size={16} />}
+          {pdfLoading ? "Generating PDF..." : "Download PDF Report"}
         </button>
         <button className="btn btn-outline" onClick={handleDepreciationCSV}>
           <FileSpreadsheet size={16} />
