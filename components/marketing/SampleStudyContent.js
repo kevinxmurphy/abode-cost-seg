@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useScrollReveal } from "@/lib/useScrollReveal";
 import { ArrowRight, FileText, FileSpreadsheet, Download } from "lucide-react";
-import { MOCK_STUDY, downloadStudy } from "@/lib/stubs";
+import { MOCK_STUDY } from "@/lib/stubs";
 
 const study = MOCK_STUDY;
 
@@ -100,20 +100,22 @@ export default function SampleStudyContent() {
               Deliverables Included
             </div>
             <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-              <button
+              <a
                 className="btn btn-outline"
-                onClick={() => downloadStudy("sample", "pdf")}
+                href="/api/study/pdf?id=sample&preview"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <FileText size={16} />
                 PDF Report Preview
-              </button>
-              <button
+              </a>
+              <Link
                 className="btn btn-outline"
-                onClick={() => downloadStudy("sample", "excel")}
+                href="/quiz"
               >
                 <FileSpreadsheet size={16} />
-                Excel Schedule Preview
-              </button>
+                Get Your Own Estimate
+              </Link>
             </div>
           </div>
         </div>

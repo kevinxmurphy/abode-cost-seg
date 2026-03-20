@@ -17,16 +17,47 @@ export default function NewPropertyPage() {
     propertyType: "Short-Term Rental",
     squareFootage: "",
   });
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(field, value) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // STUB: No real submission — redirect to dashboard with success
-    alert("Property added! (This is a stub — no data is saved.)");
-    router.push("/app/dashboard");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/properties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          property: {
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
+            purchasePrice: formData.purchasePrice.replace(/\D/g, ""),
+            yearBuilt: formData.yearBuilt,
+            propertyType: formData.propertyType,
+            sqft: formData.squareFootage.replace(/\D/g, ""),
+            step: "results",
+            studyStatus: "estimate",
+          },
+        }),
+      });
+      if (res.ok) {
+        router.push("/app/properties");
+      } else if (res.status === 401) {
+        router.push("/login?redirect=/app/properties/new");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to save property. Please try again.");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -128,8 +159,8 @@ export default function NewPropertyPage() {
         </div>
 
         <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
-          <button type="submit" className="btn btn-primary">
-            Add Property
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
+            {submitting ? "Saving..." : "Add Property"}
           </button>
           <Link href="/app/properties" className="btn btn-outline">
             Cancel
@@ -137,7 +168,6 @@ export default function NewPropertyPage() {
         </div>
 
         <p className="mono" style={{ color: "var(--dust)", marginTop: "var(--space-3)", fontSize: "10px" }}>
-          {/* STUB: No actual property data is saved in this phase */}
           Property data is stored securely and used only for your cost segregation study.
         </p>
       </form>

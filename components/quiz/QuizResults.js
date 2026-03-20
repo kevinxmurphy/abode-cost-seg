@@ -43,7 +43,7 @@ function getStudyCost(purchasePrice) {
 }
 
 // Reclassification % by property type and age
-function getReclassPercent(propertyType, yearBuilt, confidenceMode = "standard") {
+function getReclassPercent(propertyType, yearBuilt, confidenceMode = "standard", maximizeAnswers = {}) {
   const age = new Date().getFullYear() - (yearBuilt || 2010);
   const type = (propertyType || "").toLowerCase();
   let base = 0.20;
@@ -53,12 +53,21 @@ function getReclassPercent(propertyType, yearBuilt, confidenceMode = "standard")
   else if (age > 20) base += 0.03;
   else if (age > 10) base += 0.02;
   else if (age < 3) base -= 0.02;
-  if (confidenceMode === "maximized") base += 0.06;
+  if (confidenceMode === "maximized") {
+    base += 0.06;
+    // Adjust based on follow-up answers (each adds up to +2pp)
+    if (maximizeAnswers.renovations === 0) base += 0.02; // major renovations
+    else if (maximizeAnswers.renovations === 1) base += 0.01; // minor updates
+    if (maximizeAnswers.finishes === 0) base += 0.02; // custom/premium
+    else if (maximizeAnswers.finishes === 1) base += 0.01; // some upgrades
+    if (maximizeAnswers.siteWork === 0) base += 0.02; // pool, outdoor kitchen
+    else if (maximizeAnswers.siteWork === 1) base += 0.01; // deck, fencing
+  }
   const cap = confidenceMode === "maximized" ? 0.42 : 0.35;
   return Math.max(0.12, Math.min(base, cap));
 }
 
-function calculateEstimate(answers, confidenceMode = "standard") {
+function calculateEstimate(answers, confidenceMode = "standard", maximizeAnswers = {}) {
   const price = answers.purchasePrice || 500000;
   const bonusRate = BONUS_RATES[answers.purchaseYear] || 0.6;
   const bracket = 0.32;
@@ -77,7 +86,7 @@ function calculateEstimate(answers, confidenceMode = "standard") {
 
   // Property-aware reclassification
   const yearBuilt = parseInt(answers.yearBuilt) || 0;
-  const reclassPercent = getReclassPercent(answers.propertyType, yearBuilt, confidenceMode);
+  const reclassPercent = getReclassPercent(answers.propertyType, yearBuilt, confidenceMode, maximizeAnswers);
   const accelerated = depreciableBasis * reclassPercent;
 
   const bonusDeduction = accelerated * bonusRate;
@@ -123,6 +132,7 @@ export default function QuizResults() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [confidenceMode, setConfidenceMode] = useState("standard");
+  const [maximizeAnswers, setMaximizeAnswers] = useState({});
   const [landOverride, setLandOverride] = useState(null); // null = use default
   const [showLandModal, setShowLandModal] = useState(false);
   const [landModalOption, setLandModalOption] = useState("default"); // "default" | "assessor" | "custom"
@@ -173,7 +183,7 @@ export default function QuizResults() {
   };
   const hasAirbnb = !!airbnb.title;
 
-  const estimate = calculateEstimate(answers, confidenceMode);
+  const estimate = calculateEstimate(answers, confidenceMode, maximizeAnswers);
   const studyCost = getStudyCost(answers.purchasePrice);
   const midpointDeduction = Math.round(estimate.firstYearDeduction);
   const midpointSavings = Math.round(midpointDeduction * 0.32);
@@ -246,6 +256,75 @@ export default function QuizResults() {
     trackGateShown();
   }, []);
 
+  // ─── Auto-unlock if already authenticated (e.g., back button after sign-in) ──
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          setAuthUser(data.user);
+          setUnlocked(true);
+          // Save property to DB in background
+          const est = calculateEstimate(answers, confidenceMode, maximizeAnswers);
+          try {
+            await fetch("/api/properties", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                property: {
+                  address: answers.address,
+                  city: answers.city,
+                  state: answers.state,
+                  zip: answers.zip,
+                  propertyType: answers.propertyType,
+                  yearBuilt: answers.yearBuilt,
+                  sqft: answers.sqft,
+                  beds: answers.beds,
+                  baths: answers.baths,
+                  purchasePrice: answers.purchasePrice,
+                  purchaseYear: answers.purchaseYear,
+                  assessedLand: answers.assessedLand,
+                  assessedImprovement: answers.assessedImprovement,
+                  lastSoldPrice: answers.lastSoldPrice,
+                  lastSoldDate: answers.lastSoldDate,
+                  lat: answers.lat,
+                  lon: answers.lon,
+                  propertyUse: answers.propertyUse,
+                  airbnbId: airbnb.airbnbId || null,
+                  airbnbTitle: airbnb.title || null,
+                  airbnbData: hasAirbnb ? airbnb : null,
+                  detailsUrl,
+                  step: "results",
+                  studyStatus: "estimate",
+                },
+                estimate: {
+                  first_year_deduction: est.firstYearDeduction,
+                  first_year_savings: est.firstYearSavings,
+                  conservative: Math.round(est.firstYearDeduction * 0.75),
+                  likely: est.firstYearDeduction,
+                  optimistic: Math.round(est.firstYearDeduction * 1.3),
+                  standard_annual_deduction: est.standardAnnualDeduction,
+                  year_one_multiplier: est.yearOneMultiplier,
+                  depreciable_basis: est.depreciableBasis,
+                  purchase_price: answers.purchasePrice,
+                  land_ratio: est.landRatio,
+                  land_ratio_source: est.landRatioSource,
+                  reclass_percent: est.reclassPercent,
+                  accelerated_amount: est.acceleratedAmount,
+                  bonus_rate: est.bonusRate,
+                  bracket: 32,
+                  is_catch_up: est.isCatchUp,
+                },
+              }),
+            });
+          } catch {}
+        }
+      } catch {}
+    }
+    checkSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Google Sign-In callback ────────────────────────────────────────────
   const handleGoogleCredential = useCallback(async (response) => {
     if (!response?.credential) {
@@ -263,7 +342,7 @@ export default function QuizResults() {
           propertyData: {
             answers,
             airbnb: hasAirbnb ? airbnb : null,
-            estimate: calculateEstimate(answers, confidenceMode),
+            estimate: calculateEstimate(answers, confidenceMode, maximizeAnswers),
           },
         }),
       });
@@ -274,13 +353,71 @@ export default function QuizResults() {
         trackGateConverted("google");
         if (data.user.userId) identify(data.user.userId, { email: data.user.email, name: data.user.name });
         // Save property to local store so user can resume later
+        const est = calculateEstimate(answers, confidenceMode, maximizeAnswers);
         saveProperty(data.user.email, {
           answers,
           airbnb: hasAirbnb ? airbnb : null,
-          estimate: calculateEstimate(answers, confidenceMode),
+          estimate: est,
           detailsUrl,
           step: "results",
         });
+        // Save property to database so it persists across devices
+        try {
+          await fetch("/api/properties", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              property: {
+                address: answers.address,
+                city: answers.city,
+                state: answers.state,
+                zip: answers.zip,
+                propertyType: answers.propertyType,
+                yearBuilt: answers.yearBuilt,
+                sqft: answers.sqft,
+                beds: answers.beds,
+                baths: answers.baths,
+                purchasePrice: answers.purchasePrice,
+                purchaseYear: answers.purchaseYear,
+                assessedLand: answers.assessedLand,
+                assessedImprovement: answers.assessedImprovement,
+                lastSoldPrice: answers.lastSoldPrice,
+                lastSoldDate: answers.lastSoldDate,
+                lat: answers.lat,
+                lon: answers.lon,
+                propertyUse: answers.propertyUse,
+                airbnbId: airbnb.airbnbId || null,
+                airbnbTitle: airbnb.title || null,
+                airbnbData: hasAirbnb ? airbnb : null,
+                detailsUrl,
+                step: "results",
+                studyStatus: "estimate",
+              },
+              estimate: {
+                first_year_deduction: est.firstYearDeduction,
+                first_year_savings: est.firstYearSavings,
+                conservative: Math.round(est.firstYearDeduction * 0.75),
+                likely: est.firstYearDeduction,
+                optimistic: Math.round(est.firstYearDeduction * 1.3),
+                standard_annual_deduction: est.standardAnnualDeduction,
+                standard_annual_savings: est.standardAnnualSavings,
+                year_one_multiplier: est.yearOneMultiplier,
+                depreciable_basis: est.depreciableBasis,
+                purchase_price: answers.purchasePrice,
+                land_ratio: est.landRatio,
+                land_ratio_source: est.landRatioSource,
+                reclass_percent: est.reclassPercent,
+                accelerated_amount: est.acceleratedAmount,
+                bonus_rate: est.bonusRate,
+                bracket: 32,
+                is_catch_up: est.isCatchUp,
+              },
+            }),
+          });
+        } catch (e) {
+          // Non-blocking — localStorage has the backup
+          console.warn("[QuizResults] Failed to save property to DB:", e.message);
+        }
         // Auto-advance to detailed walkthrough after a brief confirmation moment
         setTimeout(() => router.push(detailsUrl), 900);
       } else {
@@ -361,7 +498,7 @@ export default function QuizResults() {
       saveProperty(email, {
         answers,
         airbnb: hasAirbnb ? airbnb : null,
-        estimate: calculateEstimate(answers, confidenceMode),
+        estimate: calculateEstimate(answers, confidenceMode, maximizeAnswers),
         detailsUrl,
         step: "results",
       });
@@ -471,7 +608,7 @@ export default function QuizResults() {
               </span>
             </div>
             <div className="results-main-label" style={{ marginTop: "var(--space-2)", fontSize: 12 }}>
-              That&apos;s a ${estimate.firstYearDeduction.toLocaleString()} deduction — saving you ~${Math.round(estimate.firstYearDeduction * 0.32).toLocaleString()} in taxes at 32%
+              Estimated first-year tax deduction — potential tax savings depend on your specific bracket and situation
             </div>
           </div>
 
@@ -575,17 +712,46 @@ export default function QuizResults() {
               </button>
             </div>
             {confidenceMode === "maximized" && (
-              <div style={{
-                marginTop: "var(--space-2)",
-                padding: "8px 12px",
-                background: "rgba(13, 148, 136, 0.06)",
-                borderRadius: "var(--radius-sm)",
-                fontSize: 11,
-                color: "var(--ink-mid)",
-                lineHeight: 1.5,
-              }}>
-                These allocations are within IRS-defensible ranges and supported by the same legal authorities. Higher reclassification percentages are common in professional engineering-based studies. Consult your CPA.
-              </div>
+              <>
+                <div style={{
+                  marginTop: "var(--space-2)",
+                  padding: "8px 12px",
+                  background: "rgba(13, 148, 136, 0.06)",
+                  borderRadius: "var(--radius-sm)",
+                  fontSize: 11,
+                  color: "var(--ink-mid)",
+                  lineHeight: 1.5,
+                }}>
+                  These allocations are within IRS-defensible ranges and supported by the same legal authorities. Higher reclassification percentages are common in professional engineering-based studies. Consult your CPA.
+                </div>
+                {/* Follow-up questions to justify higher reclassification */}
+                <div style={{
+                  marginTop: "var(--space-2)",
+                  display: "flex", flexDirection: "column", gap: "var(--space-2)",
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>
+                    Help us refine your maximized estimate:
+                  </div>
+                  <MaximizeQuestion
+                    label="Have you made any renovations or improvements since purchase?"
+                    options={["Yes, major renovations ($50K+)", "Yes, minor updates ($10K–$50K)", "No renovations"]}
+                    selected={maximizeAnswers.renovations}
+                    onSelect={(v) => setMaximizeAnswers(p => ({ ...p, renovations: v }))}
+                  />
+                  <MaximizeQuestion
+                    label="Does the property have high-end or custom finishes?"
+                    options={["Yes — custom cabinetry, premium fixtures, stone counters", "Some upgrades over builder-grade", "Standard / builder-grade finishes"]}
+                    selected={maximizeAnswers.finishes}
+                    onSelect={(v) => setMaximizeAnswers(p => ({ ...p, finishes: v }))}
+                  />
+                  <MaximizeQuestion
+                    label="Does the property have significant site improvements?"
+                    options={["Yes — pool, outdoor kitchen, extensive landscaping", "Some — deck/patio, fencing, basic landscaping", "Minimal site improvements"]}
+                    selected={maximizeAnswers.siteWork}
+                    onSelect={(v) => setMaximizeAnswers(p => ({ ...p, siteWork: v }))}
+                  />
+                </div>
+              </>
             )}
           </div>
 
@@ -626,8 +792,8 @@ export default function QuizResults() {
             </div>
             <div className="results-roi-divider" />
             <div className="results-roi-item">
-              <div className="results-roi-value">~${midpointSavings.toLocaleString()}</div>
-              <div className="results-roi-label">estimated Year 1 tax savings</div>
+              <div className="results-roi-value">${midpointDeduction.toLocaleString()}</div>
+              <div className="results-roi-label">estimated Year 1 deduction</div>
             </div>
           </div>
 
@@ -1247,6 +1413,38 @@ function InfoRow({ icon, label, value }) {
 
 function parseCurrency(str) {
   return parseInt(str.replace(/\D/g, ""), 10) || 500000;
+}
+
+function MaximizeQuestion({ label, options, selected, onSelect }) {
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 12, color: "var(--ink-mid)", marginBottom: 6, fontWeight: 500 }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {options.map((opt, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onSelect(i)}
+            style={{
+              padding: "6px 10px",
+              borderRadius: "var(--radius-sm)",
+              border: selected === i ? "1.5px solid var(--turq)" : "1px solid var(--border)",
+              background: selected === i ? "var(--turq-bg)" : "transparent",
+              cursor: "pointer",
+              textAlign: "left",
+              fontSize: 12,
+              color: "var(--ink)",
+              fontFamily: "var(--font-primary)",
+            }}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function formatPurchaseYear(val) {

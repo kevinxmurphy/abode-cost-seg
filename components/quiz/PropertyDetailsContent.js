@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,12 +18,14 @@ import {
   ChevronRight,
   Star,
   Loader2,
+  CheckCircle,
 } from "lucide-react";
 import PropertyDetailCards from "./PropertyDetailCards";
 import AirbnbAmenityDetection from "./AirbnbAmenityDetection";
 import { calculateTotalReclass } from "@/lib/propertyCategories";
 import { mergeAirbnbDefaults } from "@/lib/airbnbParser";
 import { useCountUp } from "@/lib/useCountUp";
+import { saveProperty as savePropertyLocal } from "@/lib/propertyStore";
 
 // Bonus depreciation rates
 const BONUS_RATES = {
@@ -50,6 +52,8 @@ export default function PropertyDetailsContent() {
   const [detailSelections, setDetailSelections] = useState({});
   const [confirmedCount, setConfirmedCount] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveToast, setSaveToast] = useState(false);
   // Profile enrichment (skippable)
   const [profile, setProfile] = useState({
     taxBracket: "",
@@ -286,6 +290,81 @@ export default function PropertyDetailsContent() {
     }
   }
 
+  // ─── Handle "Save for later" — persist to DB + redirect ──────────────────
+  async function handleSaveForLater() {
+    setSaveLoading(true);
+    try {
+      // Save to DB
+      await fetch("/api/properties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          property: {
+            address: tier1Data.address,
+            city: tier1Data.city,
+            state: tier1Data.state,
+            zip: tier1Data.zip,
+            propertyType: tier1Data.propertyType,
+            yearBuilt: String(tier1Data.yearBuilt),
+            sqft: String(tier1Data.sqft),
+            beds: tier1Data.beds,
+            baths: tier1Data.baths,
+            purchasePrice: tier1Data.purchasePrice,
+            purchaseYear: tier1Data.purchaseYear,
+            assessedLand: tier1Data.assessedLand,
+            assessedImprovement: tier1Data.assessedImprovement,
+            lat,
+            lon,
+            airbnbId: airbnb.airbnbId || null,
+            airbnbTitle: airbnb.title || null,
+            airbnbData: hasAirbnb ? airbnb : null,
+            step: "details",
+            studyStatus: "estimate",
+          },
+          estimate: (() => {
+            const est = calculateDetailedEstimate();
+            return {
+              first_year_deduction: est.firstYearDeduction,
+              first_year_savings: est.estimatedSavings || Math.round(est.firstYearDeduction * 0.32),
+              conservative: Math.round(est.firstYearDeduction * 0.75),
+              likely: est.firstYearDeduction,
+              optimistic: Math.round(est.firstYearDeduction * 1.3),
+              standard_annual_deduction: Math.round(depreciableBasis / 27.5),
+              year_one_multiplier: depreciableBasis > 0
+                ? Math.round((est.firstYearDeduction / (depreciableBasis / 27.5)) * 10) / 10
+                : 0,
+              depreciable_basis: Math.round(depreciableBasis),
+              purchase_price: tier1Data.purchasePrice,
+              land_ratio: Math.round(landRatio * 100),
+              reclass_percent: est.reclassPercent,
+              bonus_rate: Math.round(bonusRate * 100),
+              bracket: profile.taxBracket ? parseInt(profile.taxBracket) : 32,
+              is_catch_up: tier1Data.purchaseYear === "2022-earlier",
+            };
+          })(),
+        }),
+      });
+    } catch (e) {
+      console.warn("[PropertyDetailsContent] Failed to save property:", e.message);
+    }
+    // Also save to localStorage as backup
+    try {
+      const userRes = await fetch("/api/auth/session");
+      const userData = await userRes.json();
+      if (userData?.authenticated && userData?.user?.email) {
+        savePropertyLocal(userData.user.email, {
+          answers: tier1Data,
+          airbnb: hasAirbnb ? airbnb : null,
+          estimate: calculateDetailedEstimate(),
+          step: "details",
+        });
+      }
+    } catch {}
+    setSaveLoading(false);
+    setSaveToast(true);
+    setTimeout(() => router.push("/app/properties"), 1200);
+  }
+
   function handleShowResults() {
     setPhase("results");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -294,6 +373,19 @@ export default function PropertyDetailsContent() {
   // Always call hooks unconditionally (React rules of hooks)
   const estimate = phase === "results" ? calculateDetailedEstimate() : { firstYearDeduction: 0 };
   const deductionDisplay = useCountUp(estimate.firstYearDeduction, 1200, phase === "results");
+
+  // ─── Save toast ───
+  const saveToastEl = saveToast ? (
+    <div style={{
+      position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+      background: "var(--ink)", color: "#fff", padding: "12px 24px", borderRadius: "var(--radius-lg)",
+      fontSize: 14, fontWeight: 500, zIndex: 1000, boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+      display: "flex", alignItems: "center", gap: 8,
+    }}>
+      <CheckCircle size={16} style={{ color: "var(--turq)" }} />
+      Property saved! Pick it up anytime from your account.
+    </div>
+  ) : null;
 
   // ─── Profile Enrichment Phase (skippable) ───
   if (phase === "profile") {
@@ -391,7 +483,12 @@ export default function PropertyDetailsContent() {
                   style={{ maxWidth: 280 }}
                 />
                 <label className="pdc-profile-sms-consent" style={{ marginTop: 6, display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "var(--dust)", lineHeight: 1.5 }}>
-                  <input type="checkbox" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <input
+                    type="checkbox"
+                    checked={profile.smsConsent || false}
+                    onChange={(e) => setProfile((p) => ({ ...p, smsConsent: e.target.checked }))}
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
                   <span>By providing your number, you consent to receive SMS updates about your estimate. Msg &amp; data rates may apply. Reply STOP to opt out.</span>
                 </label>
               </div>
@@ -562,6 +659,7 @@ export default function PropertyDetailsContent() {
   // ─── Detailed Results Phase ───
   return (
     <div className="quiz-shell quiz-results-shell">
+      {saveToastEl}
       {/* Header */}
       <div className="quiz-header">
         <Link href="/" className="quiz-logo">abode</Link>
@@ -859,30 +957,30 @@ export default function PropertyDetailsContent() {
             <button
               className="btn btn-subtle"
               style={{ width: "100%", marginTop: "var(--space-2)", justifyContent: "center" }}
-              onClick={() => setPhase("walkthrough")}
+              onClick={handleSaveForLater}
+              disabled={saveLoading}
               type="button"
             >
-              Save for later
+              {saveLoading ? "Saving..." : "Save for later"}
             </button>
 
             {/* ROI callout */}
             {(() => {
-              const savings = estimate.estimatedSavings
-                || Math.round(estimate.firstYearDeduction * 0.32);
+              const deduction = estimate.firstYearDeduction;
               const studyCost = getStudyCost(tier1Data.purchasePrice);
-              const roiMultiple = savings > 0 ? (savings / studyCost).toFixed(1) : 0;
-              return savings > 0 ? (
+              const roiMultiple = deduction > 0 ? (deduction / studyCost).toFixed(0) : 0;
+              return deduction > 0 ? (
                 <div className="pdc-roi-callout">
                   <div className="pdc-roi-row">
-                    <span>Your estimated Year 1 savings</span>
-                    <strong>${savings.toLocaleString()}</strong>
+                    <span>Your estimated Year 1 deduction</span>
+                    <strong>${deduction.toLocaleString()}</strong>
                   </div>
                   <div className="pdc-roi-row">
                     <span>Study cost</span>
                     <strong>${studyCost.toLocaleString()}</strong>
                   </div>
                   <div className="pdc-roi-result">
-                    That&apos;s a {roiMultiple}x return on investment
+                    That&apos;s a {roiMultiple}x return on your study investment
                   </div>
                 </div>
               ) : null;
