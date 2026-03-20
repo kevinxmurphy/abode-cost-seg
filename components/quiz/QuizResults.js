@@ -22,6 +22,7 @@ import {
 import { captureEmail } from "@/lib/stubs";
 import { useCountUp } from "@/lib/useCountUp";
 import { saveProperty } from "@/lib/propertyStore";
+import { getStateConformity } from "@/lib/stateConformity";
 import { trackResultsViewed, trackGateShown, trackGateConverted, trackEmailCaptured, trackCheckoutInitiated, identify } from "@/lib/analytics";
 
 // Bonus depreciation rates by purchase year
@@ -104,6 +105,8 @@ function calculateEstimate(answers, confidenceMode = "standard") {
     yearOneMultiplier: Math.round(yearOneMultiplier * 10) / 10,
     landRatio: Math.round(landRatio * 100),
     landRatioSource,
+    isHighLandRatio: landRatio > 0.50,
+    isLowLandRatio: landRatio < 0.10,
   };
 }
 
@@ -481,6 +484,16 @@ export default function QuizResults() {
                 Using actual county assessed values (land: {estimate.landRatio}% of total)
               </div>
             )}
+            {estimate.isHighLandRatio && (
+              <div className="results-baseline-footnote" style={{ color: "var(--ink-mid)", marginTop: "var(--space-2)" }}>
+                High land value detected — your depreciable basis may be lower than typical for this price range.
+              </div>
+            )}
+            {estimate.isLowLandRatio && (
+              <div className="results-baseline-footnote" style={{ color: "var(--ink-mid)", marginTop: "var(--space-2)" }}>
+                Low land value detected — your depreciable basis is higher than typical, which may increase your deductions.
+              </div>
+            )}
           </div>
 
           {/* ═══ CONFIDENCE MODE TOGGLE ═══ */}
@@ -552,6 +565,30 @@ export default function QuizResults() {
               </div>
             )}
           </div>
+
+          {/* ═══ STATE CONFORMITY BANNER ═══ */}
+          {(() => {
+            const conformity = answers.state ? getStateConformity(answers.state) : null;
+            if (!conformity || !conformity.message) return null;
+            const isWarning = conformity.severity === "warning";
+            return (
+              <div style={{
+                padding: "12px 16px",
+                borderRadius: "var(--radius-sm)",
+                border: `1px solid ${isWarning ? "#d97706" : "var(--border)"}`,
+                background: isWarning ? "#fffbeb" : "var(--surface)",
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: isWarning ? "#92400e" : "var(--ink-mid)",
+                marginBottom: "var(--space-4)",
+              }}>
+                <strong style={{ display: "block", marginBottom: 4 }}>
+                  {isWarning ? "State Tax Note" : "State Info"}
+                </strong>
+                {conformity.message}
+              </div>
+            );
+          })()}
 
           {/* ═══ ROI ANCHORS — always visible ═══ */}
           <div className="results-roi-strip">
