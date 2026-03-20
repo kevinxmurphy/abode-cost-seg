@@ -1,4 +1,5 @@
-import QuizGate from "@/components/quiz/QuizGate";
+import { Suspense } from "react";
+import QuizShell from "@/components/quiz/QuizShell";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
@@ -8,5 +9,9 @@ export const metadata = buildMetadata({
 });
 
 export default function QuizPage() {
-  return <QuizGate />;
+  return (
+    <Suspense>
+      <QuizShell />
+    </Suspense>
+  );
 }
