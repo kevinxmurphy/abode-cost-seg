@@ -2,12 +2,13 @@ import NavBar from "@/components/ui/NavBar";
 import Footer from "@/components/ui/Footer";
 import AboutContent from "@/components/marketing/AboutContent";
 import Script from "next/script";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "About Abode — AI Cost Segregation for STR Investors",
-  description:
-    "Cost segregation was kept from you on purpose. We built Abode to democratize access to one of the most powerful tax strategies in the code — for every short-term rental investor, not just the ones with expensive attorneys.",
-};
+  description: "Cost segregation was kept from you on purpose. We built Abode to democratize access to one of the most powerful tax strategies in the code — for every short-term rental investor, not just the ones with expensive attorneys.",
+  path: "/about",
+});
 
 const aboutSchema = {
   "@context": "https://schema.org",

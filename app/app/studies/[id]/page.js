@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { getBrowserClient } from "@/lib/supabase";
 import Badge from "@/components/ui/Badge";
+import { calculateRecapturePreview } from "@/lib/recaptureCalculator";
 
 
 // ─── Status badge variant map ────────────────────────────────────────
@@ -265,6 +266,11 @@ export default function StudyViewerPage({ params }) {
 
       {/* ── Downloads ─────────────────────────────────────────── */}
       <DownloadsCard studyId={studyId} metaId={metaId} study={study} />
+
+      {/* ── Recapture Preview ──────────────────────────────────── */}
+      {depreciation?.yearByYearSchedule && basis && savings && (
+        <RecapturePreview study={study} />
+      )}
 
       {/* ── Disclaimer ────────────────────────────────────────── */}
       <div style={{ marginTop: "var(--space-4)", marginBottom: "var(--space-6)" }}>
@@ -681,30 +687,78 @@ function ReconciliationBadge({ rec }) {
 
 // ─── Downloads Card ──────────────────────────────────────────────────
 
+/**
+ * Assembles report data from raw generateStudy() output for CSV/PDF export.
+ * Only called when the study data doesn't already have exhibitE/exhibitC (i.e., not from assembleReport).
+ */
+async function assembleReportData(studyData) {
+  const { assembleReport } = await import("@/lib/reportAssembler");
+  return assembleReport(studyData);
+}
+
 function DownloadsCard({ studyId, metaId, study }) {
-  const handlePDF = useCallback(() => {
-    window.open(`/api/study/pdf?id=${studyId}`, "_blank");
-  }, [studyId]);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handlePDF = useCallback(async () => {
+    // Try the API route first (works when study is in Supabase)
+    try {
+      const testRes = await fetch(`/api/study/pdf?id=${studyId}`, { method: "HEAD" });
+      if (testRes.ok || testRes.status === 200) {
+        window.open(`/api/study/pdf?id=${studyId}`, "_blank");
+        return;
+      }
+    } catch {}
+
+    // Fallback: generate PDF client-side via POST
+    setPdfLoading(true);
+    try {
+      const reportData = study.exhibitE ? study : await assembleReportData(study);
+      const res = await fetch("/api/study/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ report_data: reportData, preview: false }),
+      });
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Abode_Cost_Seg_Study_${metaId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[StudyViewer] PDF download error:", err);
+      alert("Unable to generate PDF. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [studyId, study, metaId]);
 
   const handleDepreciationCSV = useCallback(async () => {
     try {
-      const { generateDepreciationCSV } = await import("@/lib/csvExporter");
-      generateDepreciationCSV(study);
-    } catch {
-      // Fallback: open API route
-      window.open(`/api/study/csv?id=${studyId}&type=depreciation`, "_blank");
+      const { generateDepreciationCSV, downloadCSV } = await import("@/lib/csvExporter");
+      const reportData = study.exhibitE ? study : await assembleReportData(study);
+      const csv = generateDepreciationCSV(reportData);
+      downloadCSV(csv, `Abode_Depreciation_Schedule_${metaId}.csv`);
+    } catch (err) {
+      console.error("[StudyViewer] CSV export error:", err);
+      alert("Unable to export CSV. Please try again.");
     }
-  }, [study, studyId]);
+  }, [study, metaId]);
 
   const handleComponentCSV = useCallback(async () => {
     try {
-      const { generateComponentCSV } = await import("@/lib/csvExporter");
-      generateComponentCSV(study);
-    } catch {
-      // Fallback: open API route
-      window.open(`/api/study/csv?id=${studyId}&type=components`, "_blank");
+      const { generateComponentCSV, downloadCSV } = await import("@/lib/csvExporter");
+      const reportData = study.exhibitC ? study : await assembleReportData(study);
+      const csv = generateComponentCSV(reportData);
+      downloadCSV(csv, `Abode_Component_Register_${metaId}.csv`);
+    } catch (err) {
+      console.error("[StudyViewer] CSV export error:", err);
+      alert("Unable to export CSV. Please try again.");
     }
-  }, [study, studyId]);
+  }, [study, metaId]);
 
   return (
     <div className="card" style={{ padding: "var(--space-4)" }}>
@@ -712,9 +766,9 @@ function DownloadsCard({ studyId, metaId, study }) {
         Downloads
       </div>
       <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-        <button className="btn btn-primary" onClick={handlePDF}>
-          <FileText size={16} />
-          Download PDF Report
+        <button className="btn btn-primary" onClick={handlePDF} disabled={pdfLoading}>
+          {pdfLoading ? <Loader2 size={16} style={{ animation: "spin 1.2s linear infinite" }} /> : <FileText size={16} />}
+          {pdfLoading ? "Generating PDF..." : "Download PDF Report"}
         </button>
         <button className="btn btn-outline" onClick={handleDepreciationCSV}>
           <FileSpreadsheet size={16} />
@@ -734,6 +788,100 @@ function DownloadsCard({ studyId, metaId, study }) {
 
 
 // ─── Skeleton helper ─────────────────────────────────────────────────
+
+// ─── Recapture Preview ────────────────────────────────
+function RecapturePreview({ study }) {
+  const [expanded, setExpanded] = useState(false);
+
+  let preview;
+  try {
+    preview = calculateRecapturePreview(study, 5);
+  } catch {
+    return null;
+  }
+
+  if (!preview) return null;
+
+  const { withCostSeg, withoutCostSeg, advantage } = preview;
+
+  return (
+    <div
+      className="card"
+      style={{ marginBottom: "var(--space-4)", padding: 0, overflow: "hidden" }}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          padding: "var(--space-3)",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--ink)",
+          fontFamily: "inherit",
+        }}
+      >
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          What if I sell? — Recapture Impact Preview
+        </span>
+        {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      </button>
+
+      {expanded && (
+        <div style={{ padding: "0 var(--space-3) var(--space-3)" }}>
+          <p style={{ fontSize: 12, color: "var(--dust)", margin: "0 0 var(--space-3)", lineHeight: 1.5 }}>
+            Comparison at a 5-year holding period. Simplified estimate — actual recapture depends on sale price and tax situation.
+          </p>
+
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <th style={{ textAlign: "left", padding: "8px 0", fontWeight: 600, color: "var(--dust)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>&nbsp;</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontWeight: 600, color: "var(--dust)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>Without Cost Seg</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontWeight: 600, color: "var(--dust)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>With Cost Seg</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <td style={{ padding: "8px 0", color: "var(--ink-mid)" }}>Total Depreciation</td>
+                <td style={{ padding: "8px 0", textAlign: "right" }}>{fmt(withoutCostSeg.totalDepreciation)}</td>
+                <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 600 }}>{fmt(withCostSeg.totalDepreciation)}</td>
+              </tr>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <td style={{ padding: "8px 0", color: "var(--ink-mid)" }}>§1250 Recapture (25%)</td>
+                <td style={{ padding: "8px 0", textAlign: "right", color: "#b91c1c" }}>({fmt(withoutCostSeg.recaptureTax)})</td>
+                <td style={{ padding: "8px 0", textAlign: "right", color: "#b91c1c" }}>({fmt(withCostSeg.totalRecaptureTax)})</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 0", fontWeight: 600 }}>Net Benefit</td>
+                <td style={{ padding: "8px 0", textAlign: "right" }}>{fmt(withoutCostSeg.netBenefit)}</td>
+                <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: "var(--turq)" }}>{fmt(withCostSeg.netBenefit)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {advantage > 0 && (
+            <div style={{
+              marginTop: "var(--space-3)",
+              padding: "8px 12px",
+              background: "rgba(13, 148, 136, 0.06)",
+              borderRadius: "var(--radius-sm)",
+              fontSize: 12,
+              color: "var(--ink-mid)",
+              lineHeight: 1.5,
+            }}>
+              Cost segregation advantage after recapture: <strong style={{ color: "var(--turq)" }}>{fmt(advantage)}</strong>.
+              {" "}This doesn&apos;t account for the time value of money, which further favors taking deductions sooner.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SkeletonBlock({ h = 20, w = "100%", mb = 0 }) {
   return (

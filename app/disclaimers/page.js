@@ -1,11 +1,13 @@
 import Link from "next/link";
 import NavBar from "@/components/ui/NavBar";
 import Footer from "@/components/ui/Footer";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Disclaimers — Abode Cost Segregation",
   description: "Important disclaimers regarding Abode Cost Segregation services.",
-};
+  path: "/disclaimers",
+});
 
 export default function DisclaimersPage() {
   const effectiveDate = "March 13, 2026";

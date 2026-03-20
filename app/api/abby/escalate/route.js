@@ -1,7 +1,13 @@
-// STUB: Replace console.log with email service (Resend / SendGrid / Loops) before go-live.
-// Current recipient: kevinxmurphy@gmail.com — PRE-PRODUCTION ONLY. Change before launch.
-
+import { Resend } from "resend";
 import log from "@/lib/logger";
+
+const ESCALATION_TO = process.env.ESCALATION_EMAIL || "hello@abodecostseg.com";
+
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+}
 
 export async function POST(request) {
   try {
@@ -31,27 +37,39 @@ export async function POST(request) {
       smsConsent: phone?.trim() ? !!smsConsent : null,
     };
 
-    // STUB: Send email notification
-    // Example with Resend (add `npm install resend` + RESEND_API_KEY env var):
-    //
-    // const resend = new Resend(process.env.RESEND_API_KEY);
-    // await resend.emails.send({
-    //   from: 'Abby <no-reply@abodecostseg.com>',
-    //   to: 'kevinxmurphy@gmail.com',   // ← change before go-live
-    //   subject: `[Abby Contact] ${submission.category} — ${submission.name}`,
-    //   text: `
-    //     Name: ${submission.name}
-    //     Email: ${submission.email}
-    //     Phone: ${submission.phone || 'not provided'}
-    //     SMS Consent: ${submission.smsConsent ?? 'n/a'}
-    //     Category: ${submission.category}
-    //     Message: ${submission.message}
-    //     Submitted: ${submission.timestamp}
-    //   `,
-    // });
-
-    // Log to server console (visible in dev + deployment logs)
+    // Always log for audit trail
     log.info('[Abby Escalation]', JSON.stringify(submission, null, 2));
+
+    // Send email via Resend
+    const resend = getResend();
+    if (resend) {
+      const { error } = await resend.emails.send({
+        from: 'Abby <hello@abodecostseg.com>',
+        to: ESCALATION_TO,
+        replyTo: submission.email,
+        subject: `[Abby Contact] ${submission.category} — ${submission.name}`,
+        text: [
+          `Name: ${submission.name}`,
+          `Email: ${submission.email}`,
+          `Phone: ${submission.phone || 'not provided'}`,
+          `SMS Consent: ${submission.smsConsent ?? 'n/a'}`,
+          `Category: ${submission.category}`,
+          ``,
+          `Message:`,
+          submission.message,
+          ``,
+          `Submitted: ${submission.timestamp}`,
+        ].join('\n'),
+      });
+
+      if (error) {
+        log.error('[Abby] Resend error:', error);
+      } else {
+        log.info('[Abby] Escalation email sent to', ESCALATION_TO);
+      }
+    } else {
+      log.warn('[Abby] RESEND_API_KEY not set — email not sent');
+    }
 
     return Response.json({ success: true });
 

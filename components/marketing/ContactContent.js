@@ -69,12 +69,23 @@ export default function ContactContent() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await fetch("/api/contact", {
+      const res = await fetch("/api/abby/escalate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          category: formData.subject || "General",
+          message: formData.message,
+        }),
       });
-    } catch {}
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("[Contact] Submit failed:", data.error);
+      }
+    } catch (err) {
+      console.error("[Contact] Submit error:", err.message);
+    }
     setSubmitting(false);
     setSubmitted(true);
   }

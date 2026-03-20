@@ -19,8 +19,13 @@ import { lookupZpid, ApifyError } from "@/lib/apify";
 import { serverCacheGet, serverCacheSet, buildPropertyCacheKey } from "@/lib/propertyCache";
 import { dbCacheGet, dbCacheSet } from "@/lib/db/cache";
 import log from "@/lib/logger";
+import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
+
+const limiter = rateLimit({ windowMs: 60_000, max: 20 });
 
 export async function POST(request) {
+  const { limited } = limiter(request);
+  if (limited) return tooManyRequests();
   let body;
   try {
     body = await request.json();

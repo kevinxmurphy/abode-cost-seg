@@ -10,7 +10,8 @@ import {
   createSession,
   buildSessionCookie,
 } from "@/lib/auth";
-import { upsertUser } from "@/lib/db/users";
+import { upsertUser, getUserByEmail } from "@/lib/db/users";
+import { sendWelcomeEmail } from "@/lib/email";
 import log from "@/lib/logger";
 
 export async function POST(request) {
@@ -43,11 +44,19 @@ export async function POST(request) {
     }
 
     // 2. Upsert user in Supabase — get back their UUID
+    const existingUser = await getUserByEmail(googleUser.email);
+    const isNewUser = !existingUser;
+
     const dbUser = await upsertUser({ ...googleUser, utmSource, utmMedium, utmCampaign });
     const userId = dbUser?.id || null;
 
     if (!dbUser) {
       log.warn("[auth/google] DB upsert failed — continuing without userId");
+    }
+
+    // Send welcome email for new signups (fire-and-forget)
+    if (isNewUser && googleUser.email) {
+      sendWelcomeEmail({ to: googleUser.email, name: googleUser.name }).catch(() => {});
     }
 
     // 3. Build session (now includes userId)

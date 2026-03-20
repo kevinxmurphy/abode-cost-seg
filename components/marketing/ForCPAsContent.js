@@ -113,12 +113,23 @@ export default function ForCPAsContent() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await fetch("/api/contact", {
+      const res = await fetch("/api/abby/escalate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          category: `CPA Partnership — ${form.interest || "General"}`,
+          message: `Firm: ${form.firm || "N/A"}\n\n${form.message}`,
+        }),
       });
-    } catch {}
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("[ForCPAs] Submit failed:", data.error);
+      }
+    } catch (err) {
+      console.error("[ForCPAs] Submit error:", err.message);
+    }
     setSubmitting(false);
     setSubmitted(true);
   }
