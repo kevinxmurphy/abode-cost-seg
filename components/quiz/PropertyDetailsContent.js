@@ -483,7 +483,12 @@ export default function PropertyDetailsContent() {
                   style={{ maxWidth: 280 }}
                 />
                 <label className="pdc-profile-sms-consent" style={{ marginTop: 6, display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "var(--dust)", lineHeight: 1.5 }}>
-                  <input type="checkbox" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <input
+                    type="checkbox"
+                    checked={profile.smsConsent || false}
+                    onChange={(e) => setProfile((p) => ({ ...p, smsConsent: e.target.checked }))}
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
                   <span>By providing your number, you consent to receive SMS updates about your estimate. Msg &amp; data rates may apply. Reply STOP to opt out.</span>
                 </label>
               </div>

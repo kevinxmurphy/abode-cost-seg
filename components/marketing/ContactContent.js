@@ -68,8 +68,13 @@ export default function ContactContent() {
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
-    // STUB: send to email/CRM (e.g. Resend, Loops, HubSpot)
-    await new Promise((r) => setTimeout(r, 900));
+    try {
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+    } catch {}
     setSubmitting(false);
     setSubmitted(true);
   }

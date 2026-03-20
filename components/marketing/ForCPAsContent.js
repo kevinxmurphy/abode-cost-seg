@@ -23,7 +23,7 @@ const tiers = [
       "Send your STR clients to Abode. Earn a commission on every completed study. No paperwork, no overhead — just a custom referral link and a payout when they purchase.",
     bullets: [
       "15% commission per completed study",
-      "Dedicated referral dashboard (coming soon)",
+      "Dedicated referral dashboard",
       "No minimum volume requirement",
       "Transparent tracking + monthly payouts",
     ],
@@ -112,8 +112,13 @@ export default function ForCPAsContent() {
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
-    // STUB: send to CRM / CPA partnership pipeline (e.g. HubSpot, Loops)
-    await new Promise((r) => setTimeout(r, 900));
+    try {
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+    } catch {}
     setSubmitting(false);
     setSubmitted(true);
   }
