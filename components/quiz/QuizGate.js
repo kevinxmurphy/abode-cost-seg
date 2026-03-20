@@ -3,14 +3,15 @@
 // ═══════════════════════════════════════════════════════
 // QuizGate — Session-aware quiz entry point
 //
-// Checks if the user is logged in on mount.
-//  • Logged-in with saved estimate(s) → Resume screen
-//  • Logged-in, no saved estimates   → Fresh quiz
-//  • Not logged in                   → Fresh quiz
+// Priority order on mount:
+//  1. ?propertyId=UUID param → fetch that property → redirect to details_url
+//  2. Logged-in with saved estimate(s) → Resume screen
+//  3. Logged-in, no saved estimates   → Fresh quiz
+//  4. Not logged in                   → Fresh quiz
 // ═══════════════════════════════════════════════════════
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 import QuizShell from "./QuizShell";
@@ -19,6 +20,7 @@ import { AbodeLogo } from "@/components/ui/NavBar";
 
 export default function QuizGate() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   // "loading" | "resume" | "quiz"
   const [status, setStatus] = useState("loading");
   const [savedProperties, setSavedProperties] = useState([]);
@@ -30,6 +32,27 @@ export default function QuizGate() {
 
     async function checkSession() {
       try {
+        // 0. ?propertyId param — go straight to that property's details
+        const propertyId = searchParams.get("propertyId");
+        if (propertyId) {
+          const res = await fetch(`/api/properties/${propertyId}`);
+          if (res.ok && !cancelled) {
+            const { property } = await res.json();
+            if (property?.details_url) {
+              router.replace(property.details_url);
+              return;
+            }
+            if (property) {
+              // Fallback: pre-populate quiz from DB data
+              setInitialAnswers(reconstructAnswersFromProperty(property));
+              setInitialAirbnbJob(reconstructAirbnbJob(property));
+              setStatus("quiz");
+              return;
+            }
+          }
+          // Property not found / not owned — fall through to normal flow
+        }
+
         // 1. Is user logged in?
         const sessionRes = await fetch("/api/auth/session");
         if (!sessionRes.ok || cancelled) {

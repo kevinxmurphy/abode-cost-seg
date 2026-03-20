@@ -453,7 +453,7 @@ function EstimateBody({ property, deduction, uiState, detailHref, isDeleting, de
             {uiState === "refined" ? "Review Details" : "View Details"}
           </Link>
           <Link
-            href={`/quiz?propertyId=${property.id}`}
+            href={property.details_url || `/app/properties/${property.id}`}
             className="btn btn-subtle btn-sm"
           >
             Refine Estimate
