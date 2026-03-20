@@ -8,8 +8,13 @@ import { stripe, PRICE_ID } from "@/lib/stripe";
 import { getSession } from "@/lib/auth";
 import { getUserById } from "@/lib/db/users";
 import log from "@/lib/logger";
+import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
+
+const limiter = rateLimit({ windowMs: 60_000, max: 10 });
 
 export async function POST(request) {
+  const { limited } = limiter(request);
+  if (limited) return tooManyRequests();
   try {
     // Get user session (optional — guest checkout allowed)
     const session = await getSession(request);

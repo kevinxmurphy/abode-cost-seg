@@ -1,11 +1,13 @@
 import Link from "next/link";
 import NavBar from "@/components/ui/NavBar";
 import Footer from "@/components/ui/Footer";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Privacy Policy — Abode Cost Segregation",
   description: "Privacy Policy and CCPA disclosure for Abode Cost Segregation.",
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPolicyPage() {
   const effectiveDate = "March 13, 2026";

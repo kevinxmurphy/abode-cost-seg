@@ -1,11 +1,13 @@
 import Link from "next/link";
 import NavBar from "@/components/ui/NavBar";
 import Footer from "@/components/ui/Footer";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Terms of Service — Abode Cost Segregation",
   description: "Terms of Service for Abode Cost Segregation services.",
-};
+  path: "/terms",
+});
 
 export default function TermsOfServicePage() {
   const effectiveDate = "March 13, 2026";

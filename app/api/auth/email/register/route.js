@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { hashPassword, createSession, buildSessionCookie } from "@/lib/auth";
 import { createEmailUser, getUserByEmail } from "@/lib/db/users";
+import { sendWelcomeEmail } from "@/lib/email";
 import log from "@/lib/logger";
 
 const MIN_PASSWORD_LEN = 8;
@@ -58,6 +59,9 @@ export async function POST(request) {
         { status: 500 }
       );
     }
+
+    // Send welcome email (fire-and-forget)
+    sendWelcomeEmail({ to: user.email, name: user.name }).catch(() => {});
 
     // Create session
     const sessionToken = createSession({

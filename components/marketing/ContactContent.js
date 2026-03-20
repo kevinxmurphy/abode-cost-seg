@@ -68,8 +68,24 @@ export default function ContactContent() {
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
-    // STUB: send to email/CRM (e.g. Resend, Loops, HubSpot)
-    await new Promise((r) => setTimeout(r, 900));
+    try {
+      const res = await fetch("/api/abby/escalate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          category: formData.subject || "General",
+          message: formData.message,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("[Contact] Submit failed:", data.error);
+      }
+    } catch (err) {
+      console.error("[Contact] Submit error:", err.message);
+    }
     setSubmitting(false);
     setSubmitted(true);
   }
