@@ -191,12 +191,37 @@ export default function StudyWizardPage() {
           renovations: studyInputs.renovations || [],
         });
 
-        // STUB: Store study in session/localStorage until Supabase is wired up
         const studyPayload = { study, report, createdAt: new Date().toISOString() };
+
+        // Persist study to Supabase (fire-and-forget for UI, but capture studyId)
+        const propertyId = searchParams.get("propertyId") || null;
+        let savedStudyId = null;
+        try {
+          const saveRes = await fetch("/api/study/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              propertyId,
+              studyData: study,
+              reportData: report,
+              wizardInputs: studyInputs,
+              attestation: studyInputs.attestation || null,
+            }),
+          });
+          const saveData = await saveRes.json();
+          if (saveData.studyId) {
+            savedStudyId = saveData.studyId;
+            studyPayload.studyId = savedStudyId;
+          }
+        } catch (saveErr) {
+          console.warn("Could not save study to Supabase:", saveErr);
+        }
+
+        // Also cache in sessionStorage as fallback
         try {
           sessionStorage.setItem(
             "abode_latest_study",
-            JSON.stringify(studyPayload)
+            JSON.stringify({ ...studyPayload, study_data: study })
           );
         } catch (e) {
           console.warn("Could not store study in sessionStorage:", e);
@@ -314,14 +339,14 @@ export default function StudyWizardPage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxWidth: 400, width: "100%", margin: "0 auto" }}>
             <Link
-              href="/app/dashboard"
+              href={studyResult.studyId ? `/app/studies/${studyResult.studyId}` : "/app/dashboard"}
               className="btn btn-primary btn-lg"
               style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
               View Your Study <ArrowRight size={18} />
             </Link>
-            <Link href="/" className="btn btn-subtle" style={{ width: "100%", justifyContent: "center", fontSize: 13 }}>
-              Back to Home
+            <Link href="/app/dashboard" className="btn btn-subtle" style={{ width: "100%", justifyContent: "center", fontSize: 13 }}>
+              Go to Dashboard
             </Link>
           </div>
 
