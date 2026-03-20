@@ -119,6 +119,15 @@ export default function PropertyDetailsContent() {
       // Silently fall back to heuristic defaults
     }
   }
+  const airbnbDescriptionHintsRaw = searchParams.get("airbnbDescriptionHints") || "";
+  if (airbnbDescriptionHintsRaw) {
+    try {
+      const parsed = JSON.parse(airbnbDescriptionHintsRaw);
+      if (Array.isArray(parsed)) airbnbDescriptionHints = parsed;
+    } catch (e) {
+      // fall back to empty array
+    }
+  }
 
   // Parse Airbnb images from URL param (JSON array of {caption, imageUrl})
   let airbnbImages = [];

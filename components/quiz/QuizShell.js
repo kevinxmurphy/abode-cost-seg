@@ -230,11 +230,15 @@ export default function QuizShell() {
         if (ab.categoryEnrichment) {
           params.set("airbnbEnrichment", JSON.stringify(ab.categoryEnrichment));
         }
-        // Serialize listing images (first 12) for amenity detection UI
+        if (Array.isArray(ab.descriptionHints) && ab.descriptionHints.length > 0) {
+          params.set("airbnbDescriptionHints", JSON.stringify(ab.descriptionHints));
+        }
+        // Serialize listing images (first 25) for amenity detection UI
+        // 25 instead of 12 so pool/outdoor photos later in the gallery are included
         const imageSource = ab.allImages || ab.images;
         if (Array.isArray(imageSource) && imageSource.length > 0) {
           const imageSlice = imageSource
-            .slice(0, 12)
+            .slice(0, 25)
             .map((img) => ({
               caption: typeof img === "string" ? "" : (img.caption || ""),
               imageUrl: typeof img === "string" ? img : (img.url || img.imageUrl || ""),
